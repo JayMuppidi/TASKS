@@ -18,6 +18,12 @@ import {
 export default function App() {
   const [isSignUp, setIsSignUp] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [signupFirstName, setSignupFirstName] = useState("");
+  const [signupLastName, setSignupLastName] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signinEmail, setSigninEmail] = useState("");
+  const [signinPassword, setSigninPassword] = useState("");
 
   const handleToggleSignUp = () => {
     setIsSignUp(!isSignUp);
@@ -25,6 +31,47 @@ export default function App() {
 
   const handleToggleAdmin = () => {
     setIsAdmin(!isAdmin);
+  };
+
+  const handleSignupSubmit = (event) => {
+    event.preventDefault();
+    const signupValues = {
+      firstName: signupFirstName,
+      lastName: signupLastName,
+      email: signupEmail,
+      password: signupPassword,
+      isAdmin: isAdmin,
+    };
+    
+  };
+
+  const handleSigninSubmit = (event) => {
+    event.preventDefault();
+    const signinValues = {
+      email: signinEmail,
+      password: signinPassword,
+    };
+  };
+
+  const handleInputChange = (event) => {
+    const { name, value } = event.target;
+    if (isSignUp) {
+      if (name === "firstName") {
+        setSignupFirstName(value);
+      } else if (name === "lastName") {
+        setSignupLastName(value);
+      } else if (name === "email") {
+        setSignupEmail(value);
+      } else if (name === "password") {
+        setSignupPassword(value);
+      }
+    } else {
+      if (name === "email") {
+        setSigninEmail(value);
+      } else if (name === "password") {
+        setSigninPassword(value);
+      }
+    }
   };
 
   return (
@@ -58,91 +105,109 @@ export default function App() {
             py={6}
             maxW="md"
             w="full"
+            onSubmit={isSignUp ? handleSignupSubmit : handleSigninSubmit}
           >
             {isSignUp ? (
               <>
-                <VisuallyHidden>First Name</VisuallyHidden>
-                <Input
-                  my={2}
-                  type="text"
-                  placeholder="First Name"
-                  bg="white"
-                  _placeholder={{ color: "brand.500" }}
-                />
+              <VisuallyHidden>First Name</VisuallyHidden>
+              <Input
+                my={2}
+                type="text"
+                placeholder="First Name"
+                bg="white"
+                _placeholder={{ color: "brand.500" }}
+                name="firstName"
+                value={signupFirstName}
+                onChange={handleInputChange}
+              />
 
-                <VisuallyHidden>Last Name</VisuallyHidden>
-                <Input
-                  my={2}
-                  type="text"
-                  placeholder="Last Name"
-                  bg="white"
-                  _placeholder={{ color: "brand.500" }}
-                />
+              <VisuallyHidden>Last Name</VisuallyHidden>
+              <Input
+                my={2}
+                type="text"
+                placeholder="Last Name"
+                bg="white"
+                _placeholder={{ color: "brand.500" }}
+                name="lastName"
+                value={signupLastName}
+                onChange={handleInputChange}
+              />
 
-                <VisuallyHidden>Email Address</VisuallyHidden>
-                <Input
-                  my={2}
-                  type="email"
-                  placeholder="Email Address"
-                  bg="white"
-                  _placeholder={{ color: "brand.500" }}
-                />
+              <VisuallyHidden>Email Address</VisuallyHidden>
+              <Input
+                my={2}
+                type="email"
+                placeholder="Email Address"
+                bg="white"
+                _placeholder={{ color: "brand.500" }}
+                name="email"
+                value={signupEmail}
+                onChange={handleInputChange}
+              />
 
-                <VisuallyHidden>Password</VisuallyHidden>
-                <Input
-                  my={2}
-                  type="password"
-                  placeholder="Password"
-                  bg="white"
-                  _placeholder={{ color: "brand.500" }}
-                />
+              <VisuallyHidden>Password</VisuallyHidden>
+              <Input
+                my={2}
+                type="password"
+                placeholder="Password"
+                bg="white"
+                _placeholder={{ color: "brand.500" }}
+                name="password"
+                value={signupPassword}
+                onChange={handleInputChange}
+              />
 
-                <Switch
-                  colorScheme="brand"
-                  isChecked={isAdmin}
-                  onChange={handleToggleAdmin}
-                  size="lg"
-                  mt={2}
-                  mb={4}
-                >
-                  {isAdmin ? "Admin" : "Normal User"}
-                </Switch>
-              </>
-            ) : (
-              <>
-                <VisuallyHidden>Email Address</VisuallyHidden>
-                <Input
-                  my={2}
-                  type="email"
-                  placeholder="Email Address"
-                  bg="white"
-                  _placeholder={{ color: "brand.500" }}
-                />
+              <Switch
+                colorScheme="brand"
+                isChecked={isAdmin}
+                onChange={handleToggleAdmin}
+                size="lg"
+                mt={2}
+                mb={4}
+              >
+                {isAdmin ? "Admin" : "Normal User"}
+              </Switch>
+            </>
+          ) : (
+            <>
+              <VisuallyHidden>Email Address</VisuallyHidden>
+              <Input
+                my={2}
+                type="email"
+                placeholder="Email Address"
+                bg="white"
+                _placeholder={{ color: "brand.500" }}
+                name="email"
+                value={signinEmail}
+                onChange={handleInputChange}
+              />
 
-                <VisuallyHidden>Password</VisuallyHidden>
-                <Input
-                  my={2}
-                  type="password"
-                  placeholder="Password"
-                  bg="white"
-                  _placeholder={{ color: "brand.500" }}
-                />
-              </>
-            )}
+              <VisuallyHidden>Password</VisuallyHidden>
+              <Input
+                my={2}
+                type="password"
+                placeholder="Password"
+                bg="white"
+                _placeholder={{ color: "brand.500" }}
+                name="password"
+                value={signinPassword}
+                onChange={handleInputChange}
+              />
+            </>
+          )}
 
-            <Button
-              colorScheme="brand"
-              w="full"
-              py={3}
-              my={4}
-              type="submit"
-              bg="brand.500"
-              _hover={{ bg: "brand.600" }}
-            >
-              {isSignUp ? "Sign up for free" : "Sign in"}
-            </Button>
-
-            <Button
+          <Button
+            colorScheme="brand"
+            w="full"
+            py={3}
+            my={4}
+            type="submit"
+            bg="brand.500"
+            _hover={{ bg: "brand.600" }}
+          >
+            {isSignUp ? "Sign up for free" : "Sign in"}
+          </Button>
+          <Button
               py={3}
               w="full"
               colorScheme="blue"
@@ -167,16 +232,20 @@ export default function App() {
               Login using Google
             </Button>
 
-            <Button
+          <Button
+              my = {2}
               variant="link"
               colorScheme="brand"
               onClick={handleToggleSignUp}
             >
               {isSignUp ? "Sign in instead" : "Create an account"}
             </Button>
-          </Flex>
-        </GridItem>
-      </VStack>
-    </Box>
-  );
-}
+
+
+        </Flex>
+      </GridItem>
+    </VStack>
+  </Box>
+);
+
+          }
