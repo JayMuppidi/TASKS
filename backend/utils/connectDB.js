@@ -6,7 +6,6 @@ export default function connectDB () {
     useUnifiedTopology: true,
   })
     .then(() => {
-      console.log(MONGO_URI);
       console.log(`MongoDB Connected: ${mongoose.connection.host}`);
     })
     .catch((err) => {

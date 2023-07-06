@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import {Navigate} from "react-router-dom";
+import api from './components/api';
 import {
   chakra,
   Box,
@@ -18,6 +20,8 @@ import {
 export default function App() {
   const [isSignUp, setIsSignUp] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSubmitted,setIsSubmitted]= useState(false);
+  //const [errorMessages, setErrorMessages]= useState({});
   const [signupFirstName, setSignupFirstName] = useState("");
   const [signupLastName, setSignupLastName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
@@ -33,24 +37,57 @@ export default function App() {
     setIsAdmin(!isAdmin);
   };
 
-  const handleSignupSubmit = (event) => {
+  const handleSignupSubmit = async (event) => {
     event.preventDefault();
     const signupValues = {
-      firstName: signupFirstName,
-      lastName: signupLastName,
+      fName: signupFirstName,
+      lName: signupLastName,
       email: signupEmail,
-      password: signupPassword,
+      pword: signupPassword,
       isAdmin: isAdmin,
     };
-    
+    console.log(signupValues);
+    try {
+      const response = await api.post("/api/auth/signup", signupValues);
+      const { token, error } = response.data;
+      if (error) {
+        console.error(error);
+      } else {
+        if (response.status === 201) {
+          setIsSubmitted(true);
+          console.log(response);
+          localStorage.setItem("authTok", token);
+          localStorage.setItem("user", true);
+        }
+      }
+    } catch (error) {
+      
+      console.log("Signup failed:", error);
+    }
   };
 
-  const handleSigninSubmit = (event) => {
+  const handleSigninSubmit = async (event) => {
     event.preventDefault();
     const signinValues = {
       email: signinEmail,
       password: signinPassword,
     };
+
+    try {
+      const response = await api.post("/api/auth/login", signinValues);
+      const { token, error } = response.data;
+      if (error) {
+        console.error(error);
+      } else {
+        if (response.status === 201) {
+          setIsSubmitted(true);
+          localStorage.setItem("authTok", token);
+          localStorage.setItem("user", true);
+        }
+      }
+    } catch (error) {
+      console.error("Signin failed:", error);
+    }
   };
 
   const handleInputChange = (event) => {
@@ -73,8 +110,8 @@ export default function App() {
       }
     }
   };
-
-  return (
+  if(isSubmitted) return ( <Navigate replace to="/Profile" />);
+  else return (
     <Box px={8} py={24} mx="auto" minHeight="100vh" bg="brand.50">
       <VStack spacing={8} alignItems="center">
         <GridItem
@@ -117,6 +154,7 @@ export default function App() {
                 bg="white"
                 _placeholder={{ color: "brand.500" }}
                 name="firstName"
+                textColor="brand.500"
                 value={signupFirstName}
                 onChange={handleInputChange}
               />
@@ -127,6 +165,7 @@ export default function App() {
                 type="text"
                 placeholder="Last Name"
                 bg="white"
+                textColor="brand.500"
                 _placeholder={{ color: "brand.500" }}
                 name="lastName"
                 value={signupLastName}
@@ -139,6 +178,7 @@ export default function App() {
                 type="email"
                 placeholder="Email Address"
                 bg="white"
+                textColor="brand.500"
                 _placeholder={{ color: "brand.500" }}
                 name="email"
                 value={signupEmail}
@@ -151,6 +191,7 @@ export default function App() {
                 type="password"
                 placeholder="Password"
                 bg="white"
+                textColor="brand.500"
                 _placeholder={{ color: "brand.500" }}
                 name="password"
                 value={signupPassword}
@@ -176,6 +217,7 @@ export default function App() {
                 type="email"
                 placeholder="Email Address"
                 bg="white"
+                textColor="brand.500"
                 _placeholder={{ color: "brand.500" }}
                 name="email"
                 value={signinEmail}
@@ -187,7 +229,7 @@ export default function App() {
                 my={2}
                 type="password"
                 placeholder="Password"
-                bg="white"
+                textColor="brand.500"
                 _placeholder={{ color: "brand.500" }}
                 name="password"
                 value={signinPassword}

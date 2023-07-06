@@ -1,6 +1,7 @@
 import React from 'react';
 import Landing from './Landingpage';
 import Navbar from './components/navbar';
+import Profile from './Profile.js';
 import Dashboard from './Dashboard'
 import { extendTheme,ChakraProvider } from '@chakra-ui/react';
 import {BrowserRouter, Route, Routes} from 'react-router-dom';
@@ -33,10 +34,11 @@ function App() {
 
  
         <ChakraProvider theme = {theme}>
-        <Navbar  />
+        <Navbar />
         <Routes>
         <Route exact path="/" element={<Landing/>} />
         <Route exact path="/dashboard" element={<Dashboard/>} />
+        <Route exact path="/profile" element={<Profile/>} />
         </Routes>
         </ChakraProvider>
         </BrowserRouter>

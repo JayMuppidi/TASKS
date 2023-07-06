@@ -12,8 +12,6 @@ import {
   IconButton,
   CloseButton,
   Avatar,
-  Center,
-  Text,
   SimpleGrid,
 } from "@chakra-ui/react";
 import {
@@ -21,12 +19,11 @@ import {
   AiOutlineMenu,
   AiOutlineBell,
 } from "react-icons/ai";
-import { BsFillCameraVideoFill, BsPlus } from "react-icons/bs";
+import { BsPlus } from "react-icons/bs";
 
 export default function Navbar() {
   const bg = useColorModeValue("white", "brand.800");
   const mobileNav = useDisclosure();
-
   return (
     <React.Fragment>
       <chakra.header
@@ -69,23 +66,9 @@ export default function Navbar() {
                   justifySelf="self-start"
                   onClick={mobileNav.onClose}
                 />
-                <Button
-                  w="full"
-                  variant="ghost"
-                  leftIcon={<BsFillCameraVideoFill />}
-                >
-                  Videos
-                </Button>
               </VStack>
             </Box>
-            <chakra.a
-              href="/"
-              title="Choc Home Page"
-              display="flex"
-              alignItems="center"
-            >
-              <VisuallyHidden>Choc</VisuallyHidden>
-            </chakra.a>
+            
 
             <HStack spacing={3} display={{ base: "none", md: "inline-flex" }}>
               <Button variant="ghost" leftIcon={<AiFillHome />} size="sm">
@@ -97,14 +80,14 @@ export default function Navbar() {
           <SimpleGrid flex="1" minChildWidth="120px" spacing="20px" justifyItems="center">
             <Box
               p={2}
-              bg="white"
+              bg="brand.500"
               rounded="md"
               shadow="md"
               display="flex"
               alignItems="center"
             >
               <chakra.p
-                fontSize="xl"
+                fontSize="2xl"
                 fontWeight="bold"
                 color="gray.800"
                 _dark={{ color: "gray.200" }}
@@ -116,7 +99,7 @@ export default function Navbar() {
               >
                 <Box
                   as="span"
-                  bgGradient="linear(to-r, brand.500, brand.300)"
+                  bgGradient="linear(to-r, brand.300, brand.50)"
                   bgClip="text"
                   fontWeight="bold"
                 >
@@ -126,6 +109,7 @@ export default function Navbar() {
               </chakra.p>
             </Box>
           </SimpleGrid>
+
 
           <HStack
             spacing={3}

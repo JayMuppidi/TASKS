@@ -19,7 +19,7 @@ router.post('/signup', [
     try {
       let user = await User.findOne({ email });
       if (user) {
-        return res.status(401).json({ errors: [{ msg: 'There is already an account with this email.' }] });
+        return res.status(403).json({ errors: [{ msg: 'There is already an account with this email.' }] });
       }
       user = new User({ fName, lName, email, isAdmin, pword });
       const salt = await bcrypt.genSalt();
