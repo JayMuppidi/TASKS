@@ -1,10 +1,12 @@
-import React from "react";
+import {React,useEffect,useState} from "react";
+import { useNavigate } from "react-router-dom";
+import jwtDecode from "jwt-decode";
+import api from "./api";
 import {
   chakra,
   Box,
   Flex,
   useColorModeValue,
-  VisuallyHidden,
   HStack,
   Button,
   useDisclosure,
@@ -14,18 +16,49 @@ import {
   Avatar,
   SimpleGrid,
 } from "@chakra-ui/react";
+import { FiLogOut } from "react-icons/fi";
 import {
   AiFillHome,
   AiOutlineMenu,
-  AiOutlineBell,
 } from "react-icons/ai";
-import { BsPlus } from "react-icons/bs";
-
 export default function Navbar() {
+  const [userTok,setUserTok]=useState();
+  const [userDeets,setUserDeets]=useState();
   const bg = useColorModeValue("white", "brand.800");
+  const navigate = useNavigate();
   const mobileNav = useDisclosure();
+  // Check if user is logged in
+  useEffect(() => {
+    const authTok = localStorage.getItem("authTok");
+    if (authTok) {
+      setUserTok(jwtDecode(authTok));
+    } 
+  }, [navigate]);
+
+  // Fetch user details
+  useEffect(() => {
+    if (userTok) {
+      async function fetchUserDetails() {
+        try {
+          const response = await api.get(`user/${userTok.user.id}`);
+          setUserDeets(response.data.user);
+        } catch (error) {
+          console.log(error);
+          navigate("/");
+        }
+      }
+      fetchUserDetails();
+    }
+  }, [userTok]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('authTok');
+    navigate('/')
+    
+  };
+
   return (
-    <React.Fragment>
       <chakra.header
         bg={"brand.300"}
         w="full"
@@ -71,7 +104,7 @@ export default function Navbar() {
             
 
             <HStack spacing={3} display={{ base: "none", md: "inline-flex" }}>
-              <Button variant="ghost" leftIcon={<AiFillHome />} size="sm">
+              <Button variant="ghost" leftIcon={<AiFillHome />}   onClick={() => navigate("/dashboard")} size="sm">
                 Dashboard
               </Button>
             </HStack>
@@ -116,25 +149,19 @@ export default function Navbar() {
             display={mobileNav.isOpen ? "none" : "flex"}
             alignItems="center"
           >
-            <Button
-              colorScheme="brand"
-              color="brand.50"
-              textColor="White"
-              leftIcon={<BsPlus />}
-            >
-              New Task
-            </Button>
-
-            <chakra.a
-              p={3}
-              color="gray.800"
-              _dark={{ color: "inherit" }}
-              rounded="sm"
-              _hover={{ color: "gray.800", _dark: { color: "gray.600" } }}
-            >
-              <AiOutlineBell />
-              <VisuallyHidden>Notifications</VisuallyHidden>
-            </chakra.a>
+            
+            {userDeets && (
+    <IconButton
+      aria-label="Logout"
+      icon={<FiLogOut />}
+      colorScheme="brand"
+      variant="outline"
+      onClick={handleLogout}
+    >
+      Logout
+    </IconButton>
+)}
+            
 
             <Avatar
               size="sm"
@@ -144,6 +171,5 @@ export default function Navbar() {
           </HStack>
         </Flex>
       </chakra.header>
-    </React.Fragment>
   );
 }

@@ -8,6 +8,8 @@ import {
   GridItem,
   Button,
   Center,
+  Image,
+  HStack,
   Flex,
   Icon,
   SimpleGrid,
@@ -19,18 +21,22 @@ import {
   Text,
   Badge,
   IconButton,
+  useToast,
   Checkbox,
   Stack,
   Select,
   FormLabel,
   FormControl,
 } from "@chakra-ui/react";
-import { FiTrash2, FiFilter, FiPlusCircle } from "react-icons/fi";
+import { FiTrash2, FiFilter ,FiPlusCircle } from "react-icons/fi";
+import {FaEnvelope} from "react-icons/fa"
+import { BsFillShieldFill } from 'react-icons/bs';
 
 const Profile = () => {
   const [userTok, setUserTok] = useState();
   const [userDeets, setUserDeets] = useState(null);
   const [tasks, setTasks] = useState([]);
+  const toast = useToast();
   const [filters, setFilters] = useState({
     status: "",
     tags: "",
@@ -61,7 +67,7 @@ const Profile = () => {
     if (userTok) {
       async function fetchData() {
         try {
-          const reply = await api.get("api/user/" + userTok.user.id);
+          const reply = await api.get("user/" + userTok.user.id);
           setUserDeets(reply.data.user);
         } catch (error) {
           console.log(error);
@@ -75,21 +81,42 @@ const Profile = () => {
   useEffect(() => {
     async function fetchTasks() {
       try {
-        const reply = await api.get("/tasks");
+        const deets = {
+          "taskIds":userDeets.Tasks,
+         }
+        const reply = await api.post("/tasks/multiple",deets);
         setTasks(reply.data);
       } catch (error) {
         console.log(error);
       }
     }
     fetchTasks();
-  }, []);
+  }, [userDeets]);
 
   const handleDeleteTask = async (taskId) => {
     try {
       await api.delete(`/tasks/${taskId}`);
       setTasks(tasks.filter((task) => task._id !== taskId));
+      
+      // Show a success toast notification
+      toast({
+        title: "Task Deleted",
+        description: "Task has been successfully deleted.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
     } catch (error) {
       console.log(error);
+      
+      // Show an error toast notification
+      toast({
+        title: "Error",
+        description: "An error occurred while deleting the task.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
     }
   };
 
@@ -129,14 +156,14 @@ const Profile = () => {
     setShowNewTask(!showNewTask);
   };
 
- 
+
   const handleInputChange = (e) => {
     setNewTask({ ...newTask, [e.target.name]: e.target.value });
   };
 
   const handleCreateTask = async () => {
     try {
-      const response = await api.post("/tasks", newTask);
+      const response = await api.put("/tasks/", newTask);
       setTasks([...tasks, response.data]);
       setShowNewTask(false);
       setNewTask({
@@ -144,7 +171,7 @@ const Profile = () => {
         description: "",
         dueDate: "",
         status: "Pending",
-        assignedUsers: [],
+        assignedUsers: [userDeets._id],
         assignedTags: [],
       });
     } catch (error) {
@@ -157,32 +184,78 @@ const Profile = () => {
       <VStack spacing={8} alignItems="center">
         {/* User Details */}
         <GridItem
-          colSpan={{ base: "auto", lg: 7 }}
-          textAlign={{ base: "center", lg: "left" }}
+  colSpan={{ base: "auto", lg: 7 }}
+  textAlign={{ base: "center", lg: "left" }}
+>
+  
+  {userDeets && (
+    <VStack spacing={2} alignItems="center">
+        <Flex
+          shadow="lg"
+          rounded="lg"
+          bg="white"
+          mb={8}
+          direction="column"
+          alignItems="center"
+          justifyContent="center"
         >
-          <chakra.h1
-            mb={4}
-            fontSize={{ base: "3xl", md: "4xl" }}
-            fontWeight="bold"
-            color="brand.800"
-          >
-            User Details
-          </chakra.h1>
-          {userDeets && (
-            <VStack spacing={2} alignItems="flex-start">
-              <Text fontSize="xl" fontWeight="bold">
-                Full Name: {userDeets.fName} {userDeets.lName}
-              </Text>
-              <Text fontSize="xl" fontWeight="bold">
-                Email: {userDeets.email}
-              </Text>
-              <Text fontSize="xl" fontWeight="bold">
-                Admin: {userDeets.isAdmin ? "Yes" : "No"}
-              </Text>
-            </VStack>
-          )}
-        </GridItem>
 
+         <Box
+            bg="brand.300"
+            
+            height="0%"
+            width="100%"
+            borderRadius="lg"
+            p={7}
+            display="flex"
+            alignItems="left"
+          >
+            
+  <Image
+    src="https://i.imgur.com/hDr6l4z.jpg"
+    alt="Profile Picture"
+    borderRadius="90%"
+    boxSize="200px"
+    shadow="lg"
+   
+    mb={-20}
+    borderColor="brand.800"
+  />
+
+          </Box> 
+          <Box
+            gridColumn="span 8"
+            p={8}
+            width="full"
+            height="full"
+            borderRadius="lg"
+            textAlign="left"
+            mt={10}
+          >
+          
+            <Text
+              fontSize="4xl"
+              fontWeight="bold"
+              color="brand.800"
+            >
+              {userDeets.fName} {userDeets.lName}
+            </Text>
+            <HStack
+              spacing={3}
+              color="brand.700"
+            >
+              <FaEnvelope size={20} />
+              <Text fontSize="lg">{userDeets.email}</Text>
+            </HStack>
+            <HStack spacing = {3} color = "brand.700">
+            <BsFillShieldFill size={20} />
+            <Text fontSize="lg">{(userDeets.isAdmin)? ("Yes"):("No")}</Text>
+            </HStack>
+          </Box>
+        </Flex>
+    </VStack>
+  )}
+</GridItem>
         {/* Tasks */}
         <GridItem
           colSpan={{ base: "auto", lg: 7 }}
@@ -192,7 +265,7 @@ const Profile = () => {
             mb={4}
             fontSize={{ base: "3xl", md: "4xl" }}
             fontWeight="bold"
-            color="brand.800"
+            color="brand.300"
           >
             Tasks
           </chakra.h1>
@@ -206,7 +279,7 @@ const Profile = () => {
               size="md"
               onClick={handleShowNewTask}
             >
-              New Task
+              {!showNewTask ?("New Task"): ("Cancel new task")}
             </Button>
           </Flex>
 
@@ -264,51 +337,51 @@ const Profile = () => {
 
           {/* Task Cards */}
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
-            {filteredTasks.map((task) => (
-              <Box
-                key={task._id}
-                bg="brand.800"
-                rounded="lg"
-                shadow="lg"
-                p={4}
-                borderWidth={1}
-                borderColor="gray.200"
-              >
-                <Flex justifyContent="space-between" mb={2}>
-                  <Text fontSize="xl" fontWeight="bold">
-                    {task.title}
-                  </Text>
-                  <IconButton
-                    icon={<FiTrash2 />}
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDeleteTask(task._id)}
-                  />
-                </Flex>
-                <Text mb={4}>{task.description}</Text>
-                <Flex alignItems="center">
-                  <Checkbox
-                    isChecked={task.status === "Completed"}
-                    onChange={(e) =>
-                      handleCompleteTask(task._id, e.target.checked)
-                    }
-                  >
-                    <Text
-                      ml={2}
-                      fontWeight="bold"
-                      color={
-                        task.status === "Completed"
-                          ? "green.500"
-                          : "gray.600"
-                      }
-                    >
-                      {task.status}
-                    </Text>
-                  </Checkbox>
-                </Flex>
-              </Box>
-            ))}
-          </SimpleGrid>
+  {filteredTasks.map((task) => (
+    <Box
+      key={task._id}
+      bg="brand.100" // Use a lighter background color
+      rounded="md" // Use a slightly larger border radius
+      shadow="md" // Use a smaller shadow size
+      p={6} // Increase the padding to make the cards bigger
+      borderWidth={1}
+      borderColor="gray.200"
+    >
+      <Flex justifyContent="space-between" mb={4}> 
+        <Text fontSize="2xl" fontWeight="bold"> 
+          {task.title}
+        </Text>
+        <IconButton
+          icon={<FiTrash2 />}
+          size="sm"
+          variant="outline"
+          onClick={() => handleDeleteTask(task._id)}
+        />
+      </Flex>
+      <Text mb={6}>{task.description}</Text>
+      <Flex alignItems="center">
+        <Checkbox
+          isChecked={task.status === "Completed"}
+          onChange={(e) =>
+            handleCompleteTask(task._id, e.target.checked)
+          }
+        >
+          <Text
+            ml={2}
+            fontWeight="bold"
+            color={
+              task.status === "Completed"
+                ? "green.500"
+                : "gray.600"
+            }
+          >
+            {task.status}
+          </Text>
+        </Checkbox>
+      </Flex>
+    </Box>
+  ))}
+</SimpleGrid>
         </GridItem>
       </VStack>
     </Box>

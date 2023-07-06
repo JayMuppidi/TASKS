@@ -1,14 +1,18 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import {Navigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import api from './components/api';
 import {
   chakra,
   Box,
   GridItem,
+  Text,
   Button,
   Center,
   Flex,
   Icon,
+  HStack,
   SimpleGrid,
   VisuallyHidden,
   Input,
@@ -19,6 +23,7 @@ import {
 
 export default function App() {
   const [isSignUp, setIsSignUp] = useState(true);
+  const [errorMessages, setErrorMessages]= useState({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSubmitted,setIsSubmitted]= useState(false);
   //const [errorMessages, setErrorMessages]= useState({});
@@ -29,6 +34,19 @@ export default function App() {
   const [signinEmail, setSigninEmail] = useState("");
   const [signinPassword, setSigninPassword] = useState("");
 
+  
+  const renderErrorMessage = (name) =>
+  name === errorMessages.name && (
+    <div className="error">{errorMessages.message}</div>
+  );
+
+const errors = {
+  uError: "invalid username",
+  pError: "invalid password",
+  uTaken: "This username has been taken",
+  unkownE: "Sorry try again unkown error",
+  assocE: "This email is not associated to any account",
+};
   const handleToggleSignUp = () => {
     setIsSignUp(!isSignUp);
   };
@@ -36,6 +54,47 @@ export default function App() {
   const handleToggleAdmin = () => {
     setIsAdmin(!isAdmin);
   };
+  const handleGoogleSuccess = async (response) => {
+    //const { tokenId } = response;
+    const tokenId = response.credential;
+    //console.log(response)
+    const tokenDeets = {
+      "tokenId": tokenId
+    }
+    try {
+      const reply = await api.post("/api/gAuth/", tokenDeets);
+      if (reply.status === 200) {
+        setIsSubmitted(true);
+        localStorage.setItem("authTok", reply.data.token);
+        localStorage.setItem("user", 'true');
+      } 
+      // Save the token to the local storage or context state
+    } catch (error) {
+       if (error.response.status === 400) {
+        setErrorMessages({ name: "gError", message: errors.assocE });
+      } 
+      else {
+        setErrorMessages({name: "gError", message: errors.unkownE});
+      }
+      
+    }
+   
+  };
+  
+  const handleGoogleFailure = (response) => {
+    //console.log(response);
+    setErrorMessages({name: "gError", message: errors.unkownE});
+  };
+      
+      
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const authTok = localStorage.getItem("authTok");
+    if (authTok) {
+      navigate("/profile")
+    } 
+  }, [navigate]);
 
   const handleSignupSubmit = async (event) => {
     event.preventDefault();
@@ -46,16 +105,14 @@ export default function App() {
       pword: signupPassword,
       isAdmin: isAdmin,
     };
-    console.log(signupValues);
     try {
-      const response = await api.post("/api/auth/signup", signupValues);
+      const response = await api.post("/auth/signup", signupValues);
       const { token, error } = response.data;
       if (error) {
         console.error(error);
       } else {
         if (response.status === 201) {
           setIsSubmitted(true);
-          console.log(response);
           localStorage.setItem("authTok", token);
           localStorage.setItem("user", true);
         }
@@ -69,20 +126,21 @@ export default function App() {
   const handleSigninSubmit = async (event) => {
     event.preventDefault();
     const signinValues = {
-      email: signinEmail,
-      password: signinPassword,
+      "email": signinEmail,
+      "pword": signinPassword,
     };
 
     try {
-      const response = await api.post("/api/auth/login", signinValues);
+      const response = await api.post("/auth/login", signinValues);
       const { token, error } = response.data;
       if (error) {
         console.error(error);
       } else {
-        if (response.status === 201) {
+        if (response.status === 200) {
           setIsSubmitted(true);
           localStorage.setItem("authTok", token);
           localStorage.setItem("user", true);
+          navigate("/profile");
         }
       }
     } catch (error) {
@@ -198,16 +256,19 @@ export default function App() {
                 onChange={handleInputChange}
               />
 
-              <Switch
-                colorScheme="brand"
-                isChecked={isAdmin}
-                onChange={handleToggleAdmin}
-                size="lg"
-                mt={2}
-                mb={4}
-              >
-                {isAdmin ? "Admin" : "Normal User"}
-              </Switch>
+<HStack>
+  <Text fontWeight={!isAdmin ? "bold" : "normal"}>Normal User</Text>
+  <Switch
+    colorScheme="brand"
+    isChecked={isAdmin}
+    onChange={handleToggleAdmin}
+    size="lg"
+    mt={2}
+    mb={4}
+  />
+  <Text fontWeight={isAdmin ? "bold" : "normal"}>Admin</Text>
+</HStack>
+              
             </>
           ) : (
             <>
@@ -249,30 +310,21 @@ export default function App() {
           >
             {isSignUp ? "Sign up for free" : "Sign in"}
           </Button>
-          <Button
-              py={3}
-              w="full"
-              colorScheme="green"
-              leftIcon={
-                <Icon
-                  mr={2}
-                  aria-hidden="true"
-                  boxSize={6}
-                  viewBox="0 0 24 24"
-                  fill=""
-                  stroke="transparent"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M20.283,10.356h-8.327v3.451h4.792c-0.446,2.193-2.313,3.453-4.792,3.453c-2.923,0-5.279-2.356-5.279-5.28	c0-2.923,2.356-5.279,5.279-5.279c1.259,0,2.397,0.447,3.29,1.178l2.6-2.599c-1.584-1.381-3.615-2.233-5.89-2.233	c-4.954,0-8.934,3.979-8.934,8.934c0,4.955,3.979,8.934,8.934,8.934c4.467,0,8.529-3.249,8.529-8.934	C20.485,11.453,20.404,10.884,20.283,10.356z" />
-                </Icon>
-              }
-              bg="lightBlue"
-              _hover={{ bg: "brand.50" }}
-            >
-              Login using Google
-            </Button>
+          {/* <GoogleOAuthProvider  clientId="136594722692-lp6ui1591t2uf6f4vrmjbmtk1bfvbn8s.apps.googleusercontent.com">
+
+                
+                <GoogleLogin
+     
+      key = "AIzaSyB4mexqgCsb-WLHuJbfkHBu-VHxkIT9J6Y"
+      buttonText="Login with Google"
+      borderRadius='8px'
+      margin = '10px'
+      onSuccess={handleGoogleSuccess}
+      onFailure={handleGoogleFailure}
+      cookiePolicy={'single_host_origin'}
+    />
+        {renderErrorMessage("gError")}
+        </GoogleOAuthProvider> */}
 
           <Button
               my = {2}

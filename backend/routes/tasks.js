@@ -21,7 +21,7 @@ router.get('/tasks/:id', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-router.put('/tasks/updateStatus/:id', async (req, res) => {
+router.put('/updateStatus/:id', async (req, res) => {
   const taskId = req.params.id;
   const { status } = req.body;
 
@@ -45,10 +45,10 @@ router.put('/tasks/updateStatus/:id', async (req, res) => {
 });
 
 //to get multiple tasks
-router.get('/', async (req, res) => {
-  const taskIds = req.query.ids;
-
+router.post('/multiple', async (req, res) => {
+  const {taskIds} = req.body;
   try {
+    console.log(req.body);
     // Find tasks with the given IDs in the database
     const tasks = await Task.find({ _id: { $in: taskIds } })
       .populate('assignedTags', 'name') // Populate the assignedTags field with the tag name
@@ -65,7 +65,7 @@ router.get('/', async (req, res) => {
 router.put('/', async (req, res) => {
   try {
     const { title, description, dueDate, status, assignedUsers, assignedTags } = req.body;
-
+    console.log(assignedUsers)
     // Create a new task instance
     const newTask = new Task({
       title,
@@ -90,7 +90,6 @@ router.put('/', async (req, res) => {
       { _id: { $in: assignedTags } },
       { $push: { tasks: savedTask._id } }
     );
-
     res.status(201).json(savedTask);
   } catch (error) {
     console.error(error);
@@ -98,7 +97,7 @@ router.put('/', async (req, res) => {
   }
 });
 
-router.delete('/tasks/:taskId', async (req, res) => {
+router.delete('/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
 

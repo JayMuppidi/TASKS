@@ -11,7 +11,7 @@ const taskSchema = new mongoose.Schema({
     required: true
   },
   assignedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }],
-  assignedTags: [{ type: String, ref: 'Tags'}]
+  assignedTags: [{ type: String, ref: 'Tag'}]
 });
 taskSchema.index({ title: 'text', description: 'text' });
 const Task = mongoose.model('Task', taskSchema);

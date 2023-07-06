@@ -1,193 +1,127 @@
 import React, { useEffect, useState } from "react";
 import * as d3 from "d3";
+import { useNavigate } from "react-router-dom";
+import jwtDecode from "jwt-decode";
+import { Box, Button, Flex, Heading, Text } from "@chakra-ui/react";
+import api from "./components/api";
 
 const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("completion");
+  const [userTok, setUserTok] = useState();
+  const [userDeets, setUserDeets] = useState();
+  const navigate = useNavigate();
 
+  // Check if user is logged in
   useEffect(() => {
-    // Simulated data for tasks
-    const taskData = [
-      { id: 1, title: "Task 1", completion: 0.5, tag: "Tag A", assignedUser: "User 1" },
-      { id: 2, title: "Task 2", completion: 0.8, tag: "Tag B", assignedUser: "User 2" },
-      { id: 3, title: "Task 3", completion: 0.2, tag: "Tag A", assignedUser: "User 1" },
-      { id: 4, title: "Task 4", completion: 0.6, tag: "Tag C", assignedUser: "User 3" },
-    ];
-
-    setTasks(taskData);
-  }, []);
-
-  useEffect(() => {
-    // Update the chart when the selected filter changes
-    updateChart();
-  }, [selectedFilter]);
-
-  const updateChart = () => {
-    // Clear the existing chart
-    d3.select("#chart").selectAll("*").remove();
-
-    // Get the data based on the selected filter
-    let data = [];
-    switch (selectedFilter) {
-      case "completion":
-        data = tasks.sort((a, b) => b.completion - a.completion);
-        break;
-      case "tag":
-        data = tasks.sort((a, b) => a.tag.localeCompare(b.tag));
-        break;
-      case "assignedUser":
-        data = tasks.sort((a, b) => a.assignedUser.localeCompare(b.assignedUser));
-        break;
-      default:
-        data = tasks;
+    const authTok = localStorage.getItem("authTok");
+    if (!authTok) {
+      navigate("/");
+    } else {
+      setUserTok(jwtDecode(authTok));
     }
+  }, [navigate]);
 
-    // Create charts using D3.js
-    createBarChart(data);
-    createPieChart(data);
+  // Fetch user details
+  useEffect(() => {
+    if (userTok) {
+      async function fetchUserDetails() {
+        try {
+          const response = await api.get(`user/${userTok.user.id}`);
+          setUserDeets(response.data.user);
+        } catch (error) {
+          console.log(error);
+          navigate("/");
+        }
+      }
+      fetchUserDetails();
+    }
+  }, [userTok]);
+
+  // Fetch tasks and create charts for admin users
+  useEffect(() => {
+    if (userDeets && userDeets.isAdmin) {
+      async function fetchTasks() {
+        try {
+          const response = await api.get(`tasks`);
+          setTasks(response.data);
+          updateCharts(response.data);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+      fetchTasks();
+    }
+  }, [userDeets]);
+
+  const updateCharts = (data) => {
+    // Update the charts based on the selected filter
+    updateBarChart(data);
+    updatePieChart(data);
   };
 
-  const createBarChart = (data) => {
-    // Create a bar chart using D3.js
-    const margin = { top: 20, right: 20, bottom: 30, left: 40 };
-    const width = 500 - margin.left - margin.right;
-    const height = 300 - margin.top - margin.bottom;
+  const updateBarChart = (data) => {
+    // Clear the existing bar chart
+    d3.select("#bar-chart").selectAll("*").remove();
 
-    const svg = d3
-      .select("#chart")
-      .append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    const x = d3
-      .scaleBand()
-      .range([0, width])
-      .domain(data.map((d) => d.title))
-      .padding(0.1);
-
-    const y = d3.scaleLinear().range([height, 0]).domain([0, 1]);
-
-    svg
-      .append("g")
-      .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(x));
-
-    svg.append("g").call(d3.axisLeft(y));
-
-    svg
-      .selectAll(".bar")
-      .data(data)
-      .enter()
-      .append("rect")
-      .attr("class", "bar")
-      .attr("x", (d) => x(d.title))
-      .attr("width", x.bandwidth())
-      .attr("y", (d) => y(d.completion))
-      .attr("height", (d) => height - y(d.completion))
-      .style("fill", "#623d86");
-
-    // Add labels to the bars
-    svg
-      .selectAll(".label")
-      .data(data)
-      .enter()
-      .append("text")
-      .attr("class", "label")
-      .attr("x", (d) => x(d.title) + x.bandwidth() / 2)
-      .attr("y", (d) => y(d.completion) - 10)
-      .text((d) => `${(d.completion * 100).toFixed(0)}%`)
-      .attr("text-anchor", "middle")
-      .attr("fill", "white");
-
-    // Add the selected filter label
-    svg
-      .append("text")
-      .attr("x", width / 2)
-      .attr("y", -10)
-      .text(`Tasks sorted by ${selectedFilter}`)
-      .attr("text-anchor", "middle")
-      .attr("font-size", "14px")
-      .attr("font-weight", "bold");
+    // Create a new bar chart using D3.js
+    // ...
   };
 
-  const createPieChart = (data) => {
-    // Create a pie chart using D3.js
-    const width = 300;
-    const height = 300;
-    const radius = Math.min(width, height) / 2;
+  const updatePieChart = (data) => {
+    // Clear the existing pie chart
+    d3.select("#pie-chart").selectAll("*").remove();
 
-    const svg = d3
-      .select("#chart")
-      .append("svg")
-      .attr("width", width)
-      .attr("height", height)
-      .append("g")
-      .attr("transform", `translate(${width / 2},${height / 2})`);
-
-    const color = d3.scaleOrdinal(d3.schemeCategory10);
-
-    const pie = d3.pie().value((d) => d.value);
-
-    const arc = d3.arc().innerRadius(0).outerRadius(radius);
-
-    const arcs = svg.selectAll("arc").data(pie(data)).enter().append("g");
-
-    arcs
-      .append("path")
-      .attr("d", arc)
-      .attr("fill", (d, i) => color(i))
-      .attr("stroke", "white")
-      .style("stroke-width", "2px");
-
-    arcs
-      .append("text")
-      .attr("transform", (d) => `translate(${arc.centroid(d)})`)
-      .attr("text-anchor", "middle")
-      .text((d) => `${d.data.title} (${(d.data.completion * 100).toFixed(0)}%)`);
-
-    // Add the selected filter label
-    svg
-      .append("text")
-      .attr("x", 0)
-      .attr("y", -radius - 20)
-      .text(`Tasks sorted by ${selectedFilter}`)
-      .attr("text-anchor", "middle")
-      .attr("font-size", "14px")
-      .attr("font-weight", "bold");
+    // Create a new pie chart using D3.js
+    // ...
   };
 
-  return (
-    <div style={{ display: "flex", justifyContent: "center" }}>
-      <div id="chart"></div>
-      <div>
-        <button
-          className="filter-button"
-          data-filter="completion"
-          style={{ marginRight: "10px" }}
-          onClick={() => setSelectedFilter("completion")}
-        >
-          Sort by Completion
-        </button>
-        <button
-          className="filter-button"
-          data-filter="tag"
-          style={{ marginRight: "10px" }}
-          onClick={() => setSelectedFilter("tag")}
-        >
-          Sort by Tag
-        </button>
-        <button
-          className="filter-button"
-          data-filter="assignedUser"
-          onClick={() => setSelectedFilter("assignedUser")}
-        >
-          Sort by Assigned User
-       </button>
-      </div>
-    </div>
-  );
+  const handleFilterChange = (filter) => {
+    setSelectedFilter(filter);
+    // Update the charts with new filter
+    updateCharts(tasks);
+  };
+
+  if (userDeets && userDeets.isAdmin) {
+    return (
+      <Flex direction="column" align="center" justify="center" p={8}>
+        <Box id="bar-chart" w="100%" h="300px" mb={8} />
+        <Box id="pie-chart" w="100%" h="300px" mb={8} />
+        <Flex justify="center" mb={4}>
+          <Button
+            onClick={() => handleFilterChange("completion")}
+            colorScheme={selectedFilter === "completion" ? "brand" : "gray"}
+            mr={2}
+          >
+            Sort by Completion
+          </Button>
+          <Button
+            onClick={() => handleFilterChange("tag")}
+            colorScheme={selectedFilter === "tag" ? "brand" : "gray"}
+            mr={2}
+          >
+            Sort by Tag
+          </Button>
+          <Button
+            onClick={() => handleFilterChange("assignedUser")}
+            colorScheme={selectedFilter === "assignedUser" ? "brand" : "gray"}
+          >
+            Sort by Assigned User
+          </Button>
+        </Flex>
+      </Flex>
+    );
+  } else {
+    return (
+      <Flex direction="column" align="center" justify="center" p={8}>
+        <Heading mb={4}>Non-Admin User</Heading>
+        <Text>You are not authorized to view this page.</Text>
+        <Button mt={4} onClick={() => navigate("/")}>
+          Go Back
+        </Button>
+      </Flex>
+    );
+  }
 };
 
 export default Dashboard;
