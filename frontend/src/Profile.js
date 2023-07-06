@@ -22,8 +22,10 @@ import {
   Checkbox,
   Stack,
   Select,
+  FormLabel,
+  FormControl,
 } from "@chakra-ui/react";
-import { FiTrash2, FiFilter } from "react-icons/fi";
+import { FiTrash2, FiFilter, FiPlusCircle } from "react-icons/fi";
 
 const Profile = () => {
   const [userTok, setUserTok] = useState();
@@ -34,6 +36,15 @@ const Profile = () => {
     tags: "",
     assignedUsers: "",
     dueDate: "",
+  });
+  const [showNewTask, setShowNewTask] = useState(false);
+  const [newTask, setNewTask] = useState({
+    title: "",
+    description: "",
+    dueDate: "",
+    status: "Pending",
+    assignedUsers: [],
+    assignedTags: [],
   });
   const navigate = useNavigate();
 
@@ -113,10 +124,38 @@ const Profile = () => {
 
     return true;
   });
-  console.log(userDeets.fName)
+
+  const handleShowNewTask = () => {
+    setShowNewTask(!showNewTask);
+  };
+
+ 
+  const handleInputChange = (e) => {
+    setNewTask({ ...newTask, [e.target.name]: e.target.value });
+  };
+
+  const handleCreateTask = async () => {
+    try {
+      const response = await api.post("/tasks", newTask);
+      setTasks([...tasks, response.data]);
+      setShowNewTask(false);
+      setNewTask({
+        title: "",
+        description: "",
+        dueDate: "",
+        status: "Pending",
+        assignedUsers: [],
+        assignedTags: [],
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <Box px={8} py={24} mx="auto" minHeight="100vh" bg="brand.50">
       <VStack spacing={8} alignItems="center">
+        {/* User Details */}
         <GridItem
           colSpan={{ base: "auto", lg: 7 }}
           textAlign={{ base: "center", lg: "left" }}
@@ -128,6 +167,7 @@ const Profile = () => {
             color="brand.800"
           >
             User Details
+          </chakra.h1>
           {userDeets && (
             <VStack spacing={2} alignItems="flex-start">
               <Text fontSize="xl" fontWeight="bold">
@@ -140,9 +180,10 @@ const Profile = () => {
                 Admin: {userDeets.isAdmin ? "Yes" : "No"}
               </Text>
             </VStack>
-          )} </chakra.h1>
+          )}
         </GridItem>
 
+        {/* Tasks */}
         <GridItem
           colSpan={{ base: "auto", lg: 7 }}
           textAlign={{ base: "center", lg: "left" }}
@@ -155,37 +196,78 @@ const Profile = () => {
           >
             Tasks
           </chakra.h1>
-          <Flex align="center" mb={4}>
-            <Text fontSize="lg" fontWeight="bold" mr={2}>
-              Filter by:
-            </Text>
-            <IconButton
-              icon={<FiFilter />}
-              size="sm"
-              variant="outline"
-              onClick={() => setFilters({})}
-            />
-            <Select
-              placeholder="Status"
-              ml={2}
-              w="200px"
-              value={filters.status}
-              onChange={(e) =>
-                setFilters({ ...filters, status: e.target.value })
-              }
+
+          {/* New Task */}
+          <Flex justifyContent="flex-end" mb={4}>
+            <Button
+              leftIcon={<FiPlusCircle />}
+              colorScheme="brand"
+              variant="solid"
+              size="md"
+              onClick={handleShowNewTask}
             >
-              <option value="">All Status</option>
-              <option value="Pending">Pending</option>
-              <option value="working">Working</option>
-              <option value="Completed">Completed</option>
-            </Select>
-            {/* Add more filter options based on your schema */}
+              New Task
+            </Button>
           </Flex>
+
+          {/* New Task Form */}
+          {showNewTask && (
+            <Box
+              bg="brand.500"
+              rounded="lg"
+              shadow="lg"
+              p={4}
+              borderWidth={1}
+              borderColor="gray.200"
+              mb={4}
+            >
+              <chakra.h2 fontSize="xl" fontWeight="bold" mb={4}>
+                Create New Task
+              </chakra.h2>
+              <FormControl id="title" mb={4}>
+                <FormLabel>Title</FormLabel>
+                <Input
+                  type="text"
+                  name="title"
+                  value={newTask.title}
+                  onChange={handleInputChange}
+                />
+              </FormControl>
+              <FormControl id="description" mb={4}>
+                <FormLabel>Description</FormLabel>
+                <Input
+                  type="text"
+                  name="description"
+                  value={newTask.description}
+                  onChange={handleInputChange}
+                />
+              </FormControl>
+              <FormControl id="dueDate" mb={4}>
+                <FormLabel>Due Date</FormLabel>
+                <Input
+                  type="date"
+                  name="dueDate"
+                  value={newTask.dueDate}
+                  onChange={handleInputChange}
+                />
+              </FormControl>
+              <Button
+                colorScheme="brand"
+                variant="solid"
+                size="sm"
+                onClick={handleCreateTask}
+              >
+                Create Task
+              </Button>
+            </Box>
+          )}
+
+          {/* Task Cards */}
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
             {filteredTasks.map((task) => (
               <Box
                 key={task._id}
-                bg="white"
+                bg="brand.800"
                 rounded="lg"
                 shadow="lg"
                 p={4}

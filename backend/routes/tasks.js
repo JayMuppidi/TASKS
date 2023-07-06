@@ -1,12 +1,13 @@
 import express from 'express';
-import Task from '../models/taskM'
-import User from '../models/userM'
-import Tag from '../models/tagM'
+import Task from '../models/taskM.js'
+import User from '../models/userM.js'
+import Tag from '../models/tagM.js'
 const router = express.Router();
 
 //to get a singular task
 router.get('/tasks/:id', async (req, res) => {
   const taskId = req.params.id;
+  console.log("line10")
   try {
     // Find the task by ID in the database
     const task = await Task.findById(taskId);
@@ -44,7 +45,7 @@ router.put('/tasks/updateStatus/:id', async (req, res) => {
 });
 
 //to get multiple tasks
-router.get('/tasks', async (req, res) => {
+router.get('/', async (req, res) => {
   const taskIds = req.query.ids;
 
   try {
@@ -61,7 +62,7 @@ router.get('/tasks', async (req, res) => {
   }
 });
 
-router.put('/tasks', async (req, res) => {
+router.put('/', async (req, res) => {
   try {
     const { title, description, dueDate, status, assignedUsers, assignedTags } = req.body;
 
