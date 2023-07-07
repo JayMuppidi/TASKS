@@ -44,7 +44,7 @@ router.put('/updateStatus/:id', async (req, res) => {
   }
 });
 
-//to get multiple tasks
+//to get tasks for users
 router.post('/multiple', async (req, res) => {
   const {taskIds} = req.body;
   try {
@@ -59,6 +59,25 @@ router.post('/multiple', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+//for admins
+router.get('/allTasks', async (req, res) => {
+  try {
+    const tasks = await Task.find().populate('assignedUsers').populate('assignedTags');
+    const taskData = tasks.map((task) => {
+      const assignedUsernames = task.assignedUsers.map((user) => user.fName);
+      return {
+        ...task.toObject(),
+        assignedUsernames: assignedUsernames
+      };
+      
+    });
+    res.json(taskData);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while fetching tasks' });
   }
 });
 

@@ -104,10 +104,14 @@ export default function Navbar() {
             
 
             <HStack spacing={3} display={{ base: "none", md: "inline-flex" }}>
-              <Button variant="ghost" leftIcon={<AiFillHome />}   onClick={() => navigate("/dashboard")} size="sm">
+              <Button variant="ghost"   onClick={() => navigate("/dashboard")} size="sm">
                 Dashboard
               </Button>
             </HStack>
+            <Button variant="ghost"   leftIcon={<AiFillHome />}  onClick={() => navigate("/profile")} size="sm">
+                Profile
+              </Button>
+
           </HStack>
 
           <SimpleGrid flex="1" minChildWidth="120px" spacing="20px" justifyItems="center">

@@ -37,12 +37,6 @@ const Profile = () => {
   const [userDeets, setUserDeets] = useState(null);
   const [tasks, setTasks] = useState([]);
   const toast = useToast();
-  const [filters, setFilters] = useState({
-    status: "",
-    tags: "",
-    assignedUsers: "",
-    dueDate: "",
-  });
   const [showNewTask, setShowNewTask] = useState(false);
   const [newTask, setNewTask] = useState({
     title: "",
@@ -130,27 +124,6 @@ const Profile = () => {
     }
   };
 
-  const filteredTasks = tasks.filter((task) => {
-    const { status, tags, assignedUsers, dueDate } = filters;
-
-    if (status && task.status !== status) {
-      return false;
-    }
-
-    if (tags && !task.assignedTags.includes(tags)) {
-      return false;
-    }
-
-    if (assignedUsers && !task.assignedUsers.includes(assignedUsers)) {
-      return false;
-    }
-
-    if (dueDate && new Date(task.dueDate) > new Date(dueDate)) {
-      return false;
-    }
-
-    return true;
-  });
 
   const handleShowNewTask = () => {
     setShowNewTask(!showNewTask);
@@ -171,7 +144,7 @@ const Profile = () => {
         description: "",
         dueDate: "",
         status: "Pending",
-        assignedUsers: [userDeets._id],
+        "assignedUsers": [userDeets._id],
         assignedTags: [],
       });
     } catch (error) {
@@ -337,7 +310,7 @@ const Profile = () => {
 
           {/* Task Cards */}
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
-  {filteredTasks.map((task) => (
+  {tasks.map((task) => (
     <Box
       key={task._id}
       bg="brand.100" // Use a lighter background color
