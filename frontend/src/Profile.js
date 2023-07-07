@@ -136,6 +136,7 @@ const Profile = () => {
 
   const handleCreateTask = async () => {
     try {
+      newTask.assignedUsers=[userDeets._id];
       const response = await api.put("/tasks/", newTask);
       setTasks([...tasks, response.data]);
       setShowNewTask(false);

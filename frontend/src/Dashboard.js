@@ -2,17 +2,41 @@ import React, { useEffect, useState } from "react";
 import * as d3 from "d3";
 import { useNavigate } from "react-router-dom";
 import jwtDecode from "jwt-decode";
-import { Box, Button,HStack, Flex,FormControl,FormLabel,chakra,Input, Heading, Text, useToast } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  HStack,
+  Checkbox,
+  Flex,
+  FormControl,
+  FormLabel,
+  chakra,
+  Input,
+  Heading,
+  Text,
+  useToast,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Wrap,
+  WrapItem,
+} from "@chakra-ui/react";
 import api from "./components/api";
 import { FiPlusCircle } from "react-icons/fi";
+
 const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("completion");
   const [userTok, setUserTok] = useState();
   const [userDeets, setUserDeets] = useState();
+  const [tags, setTags] = useState([]);
   const navigate = useNavigate();
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState("");
   const toast = useToast();
   const [showNewTask, setShowNewTask] = useState(false);
+  const [showNewTag, setShowNewTag] = useState(false);
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -21,11 +45,14 @@ const Dashboard = () => {
     assignedUsers: [],
     assignedTags: [],
   });
+  const [newTag, setNewTag] = useState({
+    name: "",
+  });
+  
   const handleDeleteTask = async (taskId) => {
     try {
       await api.delete(`/tasks/${taskId}`);
       setTasks(tasks.filter((task) => task._id !== taskId));
-      
       // Show a success toast notification
       toast({
         title: "Task Deleted",
@@ -36,7 +63,7 @@ const Dashboard = () => {
       });
     } catch (error) {
       console.log(error);
-      
+
       // Show an error toast notification
       toast({
         title: "Error",
@@ -47,10 +74,15 @@ const Dashboard = () => {
       });
     }
   };
+  
   const handleInputChange = (e) => {
     setNewTask({ ...newTask, [e.target.name]: e.target.value });
   };
-
+  
+  const handleInputChangeTag = (e) => {
+    setNewTag({ ...newTag, [e.target.name]: e.target.value });
+  };
+  
   const handleCreateTask = async () => {
     try {
       const response = await api.put("/tasks/", newTask);
@@ -61,13 +93,14 @@ const Dashboard = () => {
         description: "",
         dueDate: "",
         status: "Pending",
-        "assignedUsers": [userDeets._id],
+        assignedUsers: [userDeets._id],
         assignedTags: [],
       });
     } catch (error) {
       console.log(error);
     }
   };
+
   const handleCompleteTask = async (taskId, checked) => {
     try {
       await api.put(`/tasks/updateStatus/${taskId}`, {
@@ -78,13 +111,38 @@ const Dashboard = () => {
     }
   };
 
-
   const formatDate = (date) => {
     const formattedDate = new Date(date).toLocaleDateString("en-US");
     return formattedDate;
   };
+  
   const handleShowNewTask = () => {
     setShowNewTask(!showNewTask);
+  };
+  
+  const handleShowNewTag = () => {
+    setShowNewTag(!showNewTag);
+  };
+  
+
+
+  const fetchTags = async () => {
+    try {
+      const response = await api.get("/tags/allTags");
+      setTags(response.data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await api.get("/user/allUsers");
+      console.log(response.data)
+      setUsers(response.data);
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   // Check if user is logged in
@@ -104,7 +162,7 @@ const Dashboard = () => {
         try {
           const response = await api.get(`user/${userTok.user.id}`);
           setUserDeets(response.data.user);
-        } catch (error) {
+        } catch (error){
           console.log(error);
           navigate("/");
         }
@@ -120,13 +178,20 @@ const Dashboard = () => {
         try {
           const response = await api.get("/tasks/allTasks");
           setTasks(response.data);
-          console.log(response.data)
+          console.log(response.data);
           updateCharts(response.data);
         } catch (error) {
           console.log(error);
         }
       }
       fetchTasks();
+    }
+  }, [userDeets]);
+
+  useEffect(() => {
+    if (userDeets && userDeets.isAdmin) {
+      fetchTags();
+      fetchUsers();
     }
   }, [userDeets]);
 
@@ -152,133 +217,196 @@ const Dashboard = () => {
     updateCharts(tasks);
   };
 
-  const addUserToTask = (taskId) => {
-    // Logic to add user to task
-    // ...
-    toast({
-      title: "User added to task",
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-    });
+  
+  const handleAddUser = async (userId,taskId) => {
+    try{
+        await api.put("/tasks/addUser",{"userId":userId,"taskId":taskId});
+      toast({
+        title: "User added to task",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+
+    }
+    catch{
+
+      toast({
+        title: " There was an issue adding the user",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+    
+    }
   };
 
-  const addTagToTask = (taskId) => {
-    // Logic to add tag to task
-    // ...
-    toast({
-      title: "Tag added to task",
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-    });
+  const handleAddTag = async (tagId,taskId) => {
+    try{
+        await api.put("/tasks/addTag",{"tagId":tagId,"taskId":taskId});
+      toast({
+        title: "Tag added to task",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+
+    }
+    catch{
+
+      toast({
+        title: " There was an issue adding the tag",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+    
+    }
   };
 
-  const addTag = () => {
-    // Logic to add a new tag
-    // ...
-    toast({
-      title: "Tag added",
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-    });
+  useEffect(() => {
+    if (userDeets && userDeets.isAdmin) {
+      fetchUsers();
+    }
+  }, [userDeets]);
+
+  const handleCreateTag = async (taskId) => {
+    try {
+      await api.put("/tags/", newTag);
+      setShowNewTag(false);
+      setNewTag({ name: "" });
+      // Show a success toast notification
+      toast({
+        title: "Tag created",
+        description: "Tag has been successfully created.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.log(error);
+
+      // Show an error toast notification
+      toast({
+        title: "Error",
+        description: "An error occurred while creating the tag.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
   };
 
-  const markTaskComplete = (taskId) => {
-    // Logic to mark task as complete
-    // ...
-    toast({
-      title: "Task marked as complete",
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-    });
-  };
-
-  const deleteTask = (taskId) => {
-    // Logic to delete task
-    // ...
-    toast({
-      title: "Task deleted",
-      status: "success",
-      duration: 2000,
-      isClosable: true,
-    });
-  };
 
   if (userDeets && userDeets.isAdmin) {
     return (
-      
-      <Flex direction="column" align="center" height="100vh"p={8} bg="brand.700">
+      <Flex direction="column" align="center" height="100vh" p={8} bg="brand.700">
         <Flex justifyContent="flex-end" mb={4}>
+          <Button
+            leftIcon={<FiPlusCircle />}
+            colorScheme="brand"
+            variant="solid"
+            size="md"
+            onClick={handleShowNewTask}
+          >
+            {!showNewTask ? "New Task" : "Cancel new task"}
+          </Button>
+          <Button
+            ml={4}
+            colorScheme="brand"
+            variant="solid"
+            size="md"
+            onClick={handleShowNewTag}
+          >
+            {!showNewTag ? "New Tag" : "Cancel new tag"}
+          </Button>
+        </Flex>
+        {showNewTag && (
+          <Box
+            bg="brand.300"
+            rounded="lg"
+            shadow="lg"
+            p={4}
+            borderWidth={1}
+            borderColor="gray.200"
+            mb={4}
+          >
+            <chakra.h2 fontSize="xl" fontWeight="bold" mb={4}>
+              Create New Tag
+            </chakra.h2>
+            <FormControl id="Name" mb={4}>
+              <FormLabel>Name</FormLabel>
+              <Input
+                type="text"
+                name="name"
+                textColor={""}
+                value={newTag.name}
+                onChange={handleInputChangeTag}
+              />
+            </FormControl>
             <Button
-              leftIcon={<FiPlusCircle />}
               colorScheme="brand"
               variant="solid"
-              size="md"
-              onClick={handleShowNewTask}
+              size="sm"
+              onClick={handleCreateTag}
             >
-              {!showNewTask ?("New Task"): ("Cancel new task")}
+              Create Tag
             </Button>
-          </Flex>
-
-          {/* New Task Form */}
-          {showNewTask && (
-            <Box
-              bg="brand.300"
-              rounded="lg"
-              shadow="lg"
-              p={4}
-              borderWidth={1}
-              borderColor="gray.200"
-              mb={4}
+          </Box>
+        )}
+        {/* New Task Form */}
+        {showNewTask && (
+          <Box
+            bg="brand.300"
+            rounded="lg"
+            shadow="lg"
+            p={4}
+            borderWidth={1}
+            borderColor="gray.200"
+            mb={4}
+          >
+            <chakra.h2 fontSize="xl" fontWeight="bold" mb={4}>
+              Create New Task
+            </chakra.h2>
+            <FormControl id="title" mb={4}>
+              <FormLabel>Title</FormLabel>
+              <Input
+                type="text"
+                name="title"
+                value={newTask.title}
+                onChange={handleInputChange}
+              />
+            </FormControl>
+            <FormControl id="description" mb={4}>
+              <FormLabel>Description</FormLabel>
+              <Input
+                type="text"
+                name="description"
+                value={newTask.description}
+                onChange={handleInputChange}
+              />
+            </FormControl>
+            <FormControl id="dueDate" mb={4}>
+              <FormLabel>Due Date</FormLabel>
+              <Input
+                type="date"
+                name="dueDate"
+                value={newTask.dueDate}
+                onChange={handleInputChange}
+              />
+            </FormControl>
+            <Button
+              colorScheme="brand"
+              variant="solid"
+              size="sm"
+              onClick={handleCreateTask}
             >
-              <chakra.h2 fontSize="xl" fontWeight="bold" mb={4}>
-                Create New Task
-              </chakra.h2>
-              <FormControl id="title" mb={4}>
-                <FormLabel>Title</FormLabel>
-                <Input
-                  type="text"
-                  name="title"
-                  value={newTask.title}
-                  onChange={handleInputChange}
-                />
-              </FormControl>
-              <FormControl id="description" mb={4}>
-                <FormLabel>Description</FormLabel>
-                <Input
-                  type="text"
-                  name="description"
-                  value={newTask.description}
-                  onChange={handleInputChange}
-                />
-              </FormControl>
-              <FormControl id="dueDate" mb={4}>
-                <FormLabel>Due Date</FormLabel>
-                <Input
-                  type="date"
-                  name="dueDate"
-                  value={newTask.dueDate}
-                  onChange={handleInputChange}
-                />
-              </FormControl>
-              <Button
-                colorScheme="brand"
-                variant="solid"
-                size="sm"
-                onClick={handleCreateTask}
-              >
-                Create Task
-              </Button>
-            </Box>
-          )}
+              Create Task
+            </Button>
+          </Box>
+        )}
 
-
-        {/* <Box id="bar-chart" w="100%" h="300px" mb={8} />
-        <Box id="pie-chart" w="100%" h="300px" mb={8} /> */}
-        <Flex justify="center"  marginTop={3}  mb={4}>
+        <Flex justify="center" marginTop={3} mb={4}>
           <Button
             onClick={() => handleFilterChange("completion")}
             colorScheme={selectedFilter === "completion" ? "brand" : "gray"}
@@ -304,52 +432,121 @@ const Dashboard = () => {
           </Button>
         </Flex>
         <Flex wrap="wrap" justify="center" maxW="800px">
-        {tasks.map((task) => (
-  <Box
-    key={task.id}
-    bg="white"
-    p={4}
-    m={2}
-    borderRadius="md"
-    boxShadow="md"
-    width="600px"
-    _hover={{ bg: "brand.50" }}
-    textAlign="center"
-  >
-    <Box mb={4} bg="brand.500" p={2} borderRadius="md">
-      <Heading size="md">{task.title}</Heading>
-    </Box>
-    <Text mb={2} fontSize="sm" color="gray.500">
-      Status: {task.status}
-    </Text>
-    {task.assignedTags.length > 0 && (
-      <Text mb={2} fontSize="sm" color="gray.500">
-        Tags: {task.assignedTags.join(", ")}
-      </Text>
-    )}
-    {task.assignedUsers.length > 0 && (
-      <Text mb={2} fontSize="sm" color="gray.500">
-        Assigned Users: {task.assignedUsernames.join(", ")}
-      </Text>
-    )}
-    <Text mb={2}>Due by: {formatDate(task.dueDate)}</Text>
-    <HStack justify="space-between" mt="auto">
-      <Button flex={1} size="sm" onClick={() => addUserToTask(task.id)}>
-        Add User
-      </Button>
-      <Button flex={1} size="sm" onClick={() => addTagToTask(task.id)}>
-        Add Tag
-      </Button>
-      <Button flex={1} size="sm" onClick={() => markTaskComplete(task.id)}>
-        Mark as Complete
-      </Button>
-      <Button flex={1} size="sm" onClick={() => deleteTask(task.id)}>
-        Delete
-      </Button>
-    </HStack>
-  </Box>
-))}
-</Flex>
+          {tasks.map((task) => (
+            <Box
+              key={task._id}
+              bg="white"
+              p={4}
+              m={2}
+              borderRadius="md"
+              boxShadow="md"
+              width="600px"
+              textAlign="center"
+            >
+              <Box mb={4} bg="brand.500" p={2} borderRadius="md">
+                <Heading size="md">{task.title}</Heading>
+              </Box>
+              <Text mb={6}>{task.description}</Text>
+              <Flex alignItems="center">
+                <Checkbox
+                  isChecked={task.status === "Completed"}
+                  onChange={(e) =>
+                    handleCompleteTask(task._id, e.target.checked)
+                  }
+                >
+                  <Text
+                    ml={2}
+                    fontWeight="bold"
+                    color={
+                      task.status === "Completed" ? "green.500" : "gray.600"
+                    }
+                  >
+                    {task.status}
+                  </Text>
+                </Checkbox>
+              </Flex>
+              {task.assignedTags.length > 0 && (
+                <Text mb={2} fontSize="sm" color="gray.500">
+                  Tags:{" "}
+                  <Wrap>
+                    {task.assignedTags.map((tag) => (
+                      <WrapItem key={tag._id}>
+                        <Text bg="brand.200" px={2} py={1} borderRadius="md">
+                          {tag.name}
+                        </Text>
+                      </WrapItem>
+                    ))}
+                  </Wrap>
+                </Text>
+              )}
+              {task.assignedUsers.length > 0 && (
+                <Text mb={2} fontSize="sm" color="gray.500">
+                  Assigned Users:{" "}
+                  <Wrap>
+                    {task.assignedUsers.map((user) => (
+                      <WrapItem key={user._id}>
+                        <Text>{user.fName}</Text>
+                      </WrapItem>
+                    ))}
+                  </Wrap>
+                </Text>
+              )}
+              <Text mb={2}>Due by: {formatDate(task.dueDate)}</Text>
+              <HStack justify="space-between" mt="auto">
+              <Menu>
+              <MenuButton
+                as={Button}
+                flex={1}
+                size="sm"
+                colorScheme="brand"
+                variant="outline"
+              >
+                Add User
+              </MenuButton>
+              <MenuList>
+                {users.map((user) => (
+                  <MenuItem
+                    key={user._id}
+                    onClick={() => handleAddUser(user._id,task._id)}
+                  >
+                    {user.fName}
+                  </MenuItem>
+                ))}
+              </MenuList>
+            </Menu>
+            
+            <Menu>
+              <MenuButton
+                as={Button}
+                flex={1}
+                size="sm"
+                colorScheme="brand"
+                variant="outline"
+              >
+                Add Tag
+              </MenuButton>
+              <MenuList>
+                {tags.map((tag) => (
+                  <MenuItem
+                    key={tag._id}
+                    onClick={() => handleAddTag(tag._id,task._id)}
+                  >
+                    {tag.name}
+                  </MenuItem>
+                ))}
+              </MenuList>
+            </Menu>
+                <Button
+                  flex={1}
+                  size="sm"
+                  onClick={() => handleDeleteTask(task._id)}
+                >
+                  Delete
+                </Button>
+              </HStack>
+            </Box>
+          ))}
+        </Flex>
       </Flex>
     );
   } else {

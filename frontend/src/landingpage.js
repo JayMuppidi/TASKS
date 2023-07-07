@@ -41,9 +41,7 @@ export default function App() {
   );
 
 const errors = {
-  uError: "invalid username",
   pError: "invalid password",
-  uTaken: "This username has been taken",
   unkownE: "Sorry try again unkown error",
   assocE: "This email is not associated to any account",
 };
@@ -255,7 +253,7 @@ const errors = {
                 value={signupPassword}
                 onChange={handleInputChange}
               />
-
+              {renderErrorMessage("pError")}
 <HStack>
   <Text fontWeight={!isAdmin ? "bold" : "normal"}>Normal User</Text>
   <Switch

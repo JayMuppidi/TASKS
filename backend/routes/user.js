@@ -3,6 +3,16 @@ import User from '../models/userM.js'
 
 const router = express.Router();
 
+router.get('/allUsers', async (req, res) => {
+  try {
+    const users = await User.find().populate('fName').populate('_id');
+    return res.json(users);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while fetching users' });
+  }
+});
+
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   console.log(id)
@@ -17,5 +27,6 @@ router.get('/:id', async (req, res) => {
     return res.status(500).json({ error: 'An error occurred while fetching user details' });
   }
 });
+
 
 export default router;
