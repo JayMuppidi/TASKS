@@ -154,8 +154,6 @@ const BarChart = ({ data }) => {
 };
 
 
-
-
 const DonutChart = ({ data }) => {
   const chartRef = useRef(null);
 
@@ -239,8 +237,6 @@ const DonutChart = ({ data }) => {
 
 const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
-  const [selectedFilter, setSelectedFilter] = useState("completion");
-  const [userTok, setUserTok] = useState();
   const [userDeets, setUserDeets] = useState();
   const [tags, setTags] = useState([]);
   const navigate = useNavigate();
@@ -260,30 +256,23 @@ const Dashboard = () => {
   const [newTag, setNewTag] = useState({
     name: "",
   });
+  const toaster = (message,flag) => {
+    toast({
+      title: message,
+      status: (flag)?("success"):("error"),
+      duration: 2000,
+      isClosable: true,
+    });
+  }
  
   const handleDeleteTask = async (taskId) => {
     try {
       await api.delete(`/tasks/${taskId}`);
       setTasks(tasks.filter((task) => task._id !== taskId));
-      // Show a success toast notification
-      toast({
-        title: "Task Deleted",
-        description: "Task has been successfully deleted.",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
+      toaster("Task has been sucessfully deleted",1);
     } catch (error) {
       console.log(error);
-
-      // Show an error toast notification
-      toast({
-        title: "Error",
-        description: "An error occurred while deleting the task.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
+      toaster("An error occured while deleting the task",0);
     }
   };
   
@@ -325,20 +314,7 @@ const Dashboard = () => {
     }
   };
 
-  const formatDate = (date) => {
-    const formattedDate = new Date(date).toLocaleDateString("en-US");
-    return formattedDate;
-  };
-  
-  const handleShowNewTask = () => {
-    setShowNewTask(!showNewTask);
-  };
-  const handleShowGraphs = () => {
-    setShowGraphs(!showGraphs);
-  };
-  const handleShowNewTag = () => {
-    setShowNewTag(!showNewTag);
-  };
+  //helper function to clean up date display    
   
 
 
@@ -351,6 +327,15 @@ const Dashboard = () => {
     }
   };
 
+  async function fetchUserDetails(userTok) {
+    try {
+      const response = await api.get(`user/${userTok.user.id}`);
+      setUserDeets(response.data.user);
+    } catch (error){
+      console.log(error);
+      navigate("/");
+    }
+  }
   const fetchUsers = async () => {
     try {
       const response = await api.get("/user/allUsers");
@@ -367,25 +352,10 @@ const Dashboard = () => {
     if (!authTok) {
       navigate("/");
     } else {
-      setUserTok(jwtDecode(authTok));
+      fetchUserDetails(jwtDecode(authTok));
     }
   }, [navigate]);
 
-  // Fetch user details
-  useEffect(() => {
-    if (userTok) {
-      async function fetchUserDetails() {
-        try {
-          const response = await api.get(`user/${userTok.user.id}`);
-          setUserDeets(response.data.user);
-        } catch (error){
-          console.log(error);
-          navigate("/");
-        }
-      }
-      fetchUserDetails();
-    }
-  }, [userTok]);
   async function fetchTasks() {
     try {
       const response = await api.get("/tasks/allTasks");
@@ -394,99 +364,50 @@ const Dashboard = () => {
       console.log(error);
     }
   }
-
   // Fetch tasks and create charts for admin users
-  useEffect(() => {
-    if (userDeets && userDeets.isAdmin)fetchTasks();
-    
-  }, [userDeets]);
-
   useEffect(() => {
     if (userDeets && userDeets.isAdmin) {
       fetchTags();
+      fetchTasks();
       fetchUsers();
     }
   }, [userDeets]);
+/////////////////////////////////////////////////////
+  //////??//////////////////////////////////////////
+  // For adding a user or a tag, or creating a tag
 
- 
+
   const handleAddUser = async (userId,taskId) => {
     try{
         await api.put("/tasks/addUser",{"userId":userId,"taskId":taskId});
-      toast({
-        title: "User added to task",
-        status: "success",
-        duration: 2000,
-        isClosable: true,
-      });
+        toaster("User added to task",1)
       fetchTasks();
-
     }
-    catch{
-
-      toast({
-        title: " There was an issue adding the user",
-        status: "error",
-        duration: 2000,
-        isClosable: true,
-      });
-    
-    }
+    catch {toaster(" There was an issue adding the user",0)}
   };
 
   const handleAddTag = async (tagId,taskId) => {
     try{
         await api.put("/tasks/addTag",{"tagId":tagId,"taskId":taskId});
-      toast({
-        title: "Tag added to task",
-        status: "success",
-        duration: 2000,
-        isClosable: true,
-      });
+        toaster("Tag added to task",1)
       fetchTasks();
     }
-    catch{
-
-      toast({
-        title: " There was an issue adding the tag",
-        status: "error",
-        duration: 2000,
-        isClosable: true,
-      });
-    
-    }
+    catch{toaster(" There was an issue adding the tag",0)}
   };
-  useEffect(() => {
-    if (userDeets && userDeets.isAdmin) {
-      fetchUsers();
-    }
-  }, [userDeets]);
 
   const handleCreateTag = async (taskId) => {
     try {
       await api.put("/tags/", newTag);
       setShowNewTag(false);
       setNewTag({ name: "" });
-      // Show a success toast notification
-      toast({
-        title: "Tag created",
-        description: "Tag has been successfully created.",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.log(error);
-
-      // Show an error toast notification
-      toast({
-        title: "Error",
-        description: "An error occurred while creating the tag.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    }
+     toaster("Tag has been sucessfully created",1)
+    } catch (error) {toaster( "An error occurred while creating the tag.",0)}
   };
+
+
+
+
+
 
 
   if (userDeets && userDeets.isAdmin) {
@@ -498,7 +419,7 @@ const Dashboard = () => {
             colorScheme="brand"
             variant="solid"
             size="md"
-            onClick={handleShowGraphs}
+            onClick={() => setShowGraphs(!showGraphs)}
           >
           {!showGraphs ? "Show graphs" : "Hide graphs"}
           </Button>
@@ -521,7 +442,7 @@ const Dashboard = () => {
             colorScheme="brand"
             variant="solid"
             size="md"
-            onClick={handleShowNewTask}
+            onClick={() => setShowNewTask(!showNewTask)}
           >
             {!showNewTask ? "New Task" : "Cancel new task"}
           </Button>
@@ -530,7 +451,7 @@ const Dashboard = () => {
             colorScheme="brand"
             variant="solid"
             size="md"
-            onClick={handleShowNewTag}
+            onClick={() => setShowNewTag(!showNewTag)}
           >
             {!showNewTag ? "New Tag" : "Cancel new tag"}
           </Button>
@@ -569,7 +490,6 @@ const Dashboard = () => {
             </Button>
           </Box>
         )}
-        {/* New Task Form */}
         {showNewTask && (
           <Box
             bg="brand.300"
@@ -681,7 +601,7 @@ const Dashboard = () => {
                   </Wrap>
                 </Text>
               )}
-              <Text mb={2}>Due by: {formatDate(task.dueDate)}</Text>
+              <Text mb={2}>Due by: {new Date(task.dueDate).toLocaleDateString("en-US")}</Text>
               <HStack justify="space-between" mt="auto">
               <Menu>
               <MenuButton
