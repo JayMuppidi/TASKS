@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,useRef } from "react";
 import * as d3 from "d3";
 import { useNavigate } from "react-router-dom";
 import jwtDecode from "jwt-decode";
@@ -25,6 +25,218 @@ import {
 import api from "./components/api";
 import { FiPlusCircle } from "react-icons/fi";
 
+const BarChart = ({ data }) => {
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    const container = d3.select(chartRef.current);
+
+    // Clear existing content
+    container.selectAll("*").remove();
+
+    // Count the number of tasks for each tag
+    const tagCounts = {};
+    data.forEach((task) => {
+      task.assignedTags.forEach((tag) => {
+        tagCounts[tag.name] = (tagCounts[tag.name] || 0) + 1;
+      });
+    });
+
+    // Convert tagCounts to an array of objects
+    const tagData = Object.entries(tagCounts).map(([label, value]) => ({
+      label,
+      value,
+    }));
+
+    // Define color scale for tags
+    const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+    // Calculate the bar height based on the tag values
+    const barHeightScale = d3
+      .scaleLinear()
+      .domain([0, d3.max(tagData, (d) => d.value)])
+      .range([0, 200]);
+
+    // Create the bars
+    container
+      .selectAll("rect")
+      .data(tagData)
+      .enter()
+      .append("rect")
+      .attr("x", (d, i) => i * 40 + 20)
+      .attr("y", (d) => 200 - barHeightScale(d.value))
+      .attr("width", 30)
+      .attr("height", (d) => barHeightScale(d.value))
+      .attr("fill", (d, i) => colorScale(i))
+      .on("mouseover", function (event, d) {
+        d3.select(this).attr("fill", d3.color(colorScale(d.label)).darker(0.2));
+        container
+          .append("text")
+          .attr("x", event.pageX)
+          .attr("y", event.pageY - 10)
+          .attr("fill", "white")
+          .attr("font-size", "14px")
+          .attr("id", "tooltip")
+          .text(`${d.label}: ${d.value}`);
+      })
+      .on("mouseout", function () {
+        d3.select(this).attr("fill", (d, i) => colorScale(i));
+        container.select("#tooltip").remove();
+      });
+
+    // Create the x-axis
+    const xAxis = d3
+      .axisBottom()
+      .scale(
+        d3
+          .scaleBand()
+          .domain(tagData.map((d) => d.label))
+          .range([30, tagData.length * 40 + 10])
+      );
+
+    // Append a new SVG group for the x-axis
+    const xAxisGroup = container
+      .append("g")
+      .attr("transform", "translate(0, 200)")
+      .call(xAxis);
+
+    // Style the x-axis labels
+    xAxisGroup
+  .selectAll("text")
+  .attr("font-family", "Arial, sans-serif")
+  .attr("font-size", "20px")
+  .attr("fill", "#333")
+  .attr("transform", "rotate(-45)")
+  .style("text-anchor", "end")
+  .attr("dy", "-0.5em")
+  .attr("dx", "-0.5em")
+  .attr("fill", "orange");
+
+    // Add axis label
+    container
+      .append("text")
+      .attr("x", -50)
+      .attr("y", 220)
+      .attr("font-family", "Arial, sans-serif")
+      .attr("font-size", "16px")
+      .attr("fill", "#333")
+      .text("Tags");
+
+    // Add title
+    container
+      .append("text")
+      .attr("x", 200)
+      .attr("y", -20)
+      .attr("font-family", "Arial, sans-serif")
+      .attr("font-size", "20px")
+      .attr("font-weight", "bold")
+      .attr("fill", "#333")
+      .attr("text-anchor", "middle")
+      .text("Tag Frequency");
+
+    // Add chart border
+    container
+      .append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", 400)
+      .attr("height", 250)
+      .attr("fill", "none")
+      .attr("stroke", "#ddd")
+      .attr("stroke-width", 1);
+  }, [data]);
+
+  return (
+    <Box width="400px" height="400px" p={4}>
+      <svg ref={chartRef} width="100%" height="100%" />
+    </Box>
+  );
+};
+
+
+
+
+const DonutChart = ({ data }) => {
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    const container = d3.select(chartRef.current);
+
+    // Clear existing content
+    container.selectAll("*").remove();
+
+    // Count the number of completed and pending tasks
+    const completedCount = data.filter((task) => task.status === "Completed").length;
+    const pendingCount = data.filter((task) => task.status === "Pending").length;
+
+    // Create the donut chart data
+    const donutData = [
+      { label: "Completed", value: completedCount },
+      { label: "Pending", value: pendingCount },
+    ];
+
+    // Set up the donut chart layout
+    const pie = d3.pie().value((d) => d.value);
+
+    // Generate the arc for each donut slice
+    const arc = d3.arc().innerRadius(70).outerRadius(100).cornerRadius(10);
+
+    // Create the donut slices
+    const slices = container
+      .selectAll("path")
+      .data(pie(donutData))
+      .enter()
+      .append("path")
+      .attr("d", arc)
+      .attr("fill", (d, i) => (i === 0 ? "#68D391" : "#ED8936"))
+      .attr("transform", "translate(200, 200)");
+
+    // Add percentages to the donut slices
+    slices
+      .append("text")
+      .attr("transform", (d) => `translate(${arc.centroid(d)})`)
+      .attr("text-anchor", "middle")
+      .attr("fill", "white")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", "14px")
+      .text((d) => `${d.data.value} (${d3.format(".1%")(d.data.value / (completedCount + pendingCount))})`);
+
+    // Create legend
+    const legend = container
+      .selectAll(".legend")
+      .data(donutData)
+      .enter()
+      .append("g")
+      .attr("class", "legend")
+      .attr("transform", (d, i) => `translate(280, ${i * 30 + 20})`);
+
+    // Add legend color rectangles
+    legend
+      .append("rect")
+      .attr("width", 20)
+      .attr("height", 20)
+      .attr("fill", (d, i) => (i === 0 ? "#68D391" : "#ED8936"));
+
+    // Add legend text
+    legend
+      .append("text")
+      .attr("x", 30)
+      .attr("y", 15)
+      .attr("fill", "black")
+      .attr("font-family", "sans-serif")
+      .attr("font-size", "14px")
+      .text((d) => d.label);
+  }, [data]);
+
+  return (
+    <Box width="400px" height="800px" p={4}>
+      <svg ref={chartRef} width="100%" height="100%" />
+    </Box>
+  );
+};
+
+
+
 const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
   const [selectedFilter, setSelectedFilter] = useState("completion");
@@ -33,10 +245,10 @@ const Dashboard = () => {
   const [tags, setTags] = useState([]);
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
-  const [selectedUser, setSelectedUser] = useState("");
   const toast = useToast();
   const [showNewTask, setShowNewTask] = useState(false);
   const [showNewTag, setShowNewTag] = useState(false);
+  const [showGraphs, setShowGraphs] = useState(false);
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -48,7 +260,7 @@ const Dashboard = () => {
   const [newTag, setNewTag] = useState({
     name: "",
   });
-  
+ 
   const handleDeleteTask = async (taskId) => {
     try {
       await api.delete(`/tasks/${taskId}`);
@@ -83,6 +295,7 @@ const Dashboard = () => {
     setNewTag({ ...newTag, [e.target.name]: e.target.value });
   };
   
+
   const handleCreateTask = async () => {
     try {
       const response = await api.put("/tasks/", newTask);
@@ -106,6 +319,7 @@ const Dashboard = () => {
       await api.put(`/tasks/updateStatus/${taskId}`, {
         status: checked ? "Completed" : "Pending",
       });
+      fetchTasks();
     } catch (error) {
       console.log(error);
     }
@@ -119,7 +333,9 @@ const Dashboard = () => {
   const handleShowNewTask = () => {
     setShowNewTask(!showNewTask);
   };
-  
+  const handleShowGraphs = () => {
+    setShowGraphs(!showGraphs);
+  };
   const handleShowNewTag = () => {
     setShowNewTag(!showNewTag);
   };
@@ -170,22 +386,19 @@ const Dashboard = () => {
       fetchUserDetails();
     }
   }, [userTok]);
+  async function fetchTasks() {
+    try {
+      const response = await api.get("/tasks/allTasks");
+      setTasks(response.data);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   // Fetch tasks and create charts for admin users
   useEffect(() => {
-    if (userDeets && userDeets.isAdmin) {
-      async function fetchTasks() {
-        try {
-          const response = await api.get("/tasks/allTasks");
-          setTasks(response.data);
-          console.log(response.data);
-          updateCharts(response.data);
-        } catch (error) {
-          console.log(error);
-        }
-      }
-      fetchTasks();
-    }
+    if (userDeets && userDeets.isAdmin)fetchTasks();
+    
   }, [userDeets]);
 
   useEffect(() => {
@@ -195,29 +408,7 @@ const Dashboard = () => {
     }
   }, [userDeets]);
 
-  const updateCharts = (data) => {
-    updateBarChart(data);
-    updatePieChart(data);
-  };
-
-  const updateBarChart = (data) => {
-    d3.select("#bar-chart").selectAll("*").remove();
-    // Create a new bar chart using D3.js
-    // ...
-  };
-
-  const updatePieChart = (data) => {
-    d3.select("#pie-chart").selectAll("*").remove();
-    // Create a new pie chart using D3.js
-    // ...
-  };
-
-  const handleFilterChange = (filter) => {
-    setSelectedFilter(filter);
-    updateCharts(tasks);
-  };
-
-  
+ 
   const handleAddUser = async (userId,taskId) => {
     try{
         await api.put("/tasks/addUser",{"userId":userId,"taskId":taskId});
@@ -227,6 +418,7 @@ const Dashboard = () => {
         duration: 2000,
         isClosable: true,
       });
+      fetchTasks();
 
     }
     catch{
@@ -250,7 +442,7 @@ const Dashboard = () => {
         duration: 2000,
         isClosable: true,
       });
-
+      fetchTasks();
     }
     catch{
 
@@ -263,7 +455,6 @@ const Dashboard = () => {
     
     }
   };
-
   useEffect(() => {
     if (userDeets && userDeets.isAdmin) {
       fetchUsers();
@@ -302,7 +493,30 @@ const Dashboard = () => {
     return (
       <Flex direction="column" align="center" height="100vh" p={8} bg="brand.700">
         <Flex justifyContent="flex-end" mb={4}>
+        <Button
+            leftIcon={<FiPlusCircle />}
+            colorScheme="brand"
+            variant="solid"
+            size="md"
+            onClick={handleShowGraphs}
+          >
+          {!showGraphs ? "Show graphs" : "Hide graphs"}
+          </Button>
+          {showGraphs && (
+      <Flex justify="center" mt={4}>
+        <Box width="400px" height="300px">
+          <BarChart data={tasks} />
+        </Box>
+        <Box width="400px" height="300px">
+          <DonutChart data={tasks} />
+        </Box>
+      </Flex>)}
+            </Flex> 
+          {! showGraphs && 
+          <div>
+          <Flex>
           <Button
+            ml = {4}
             leftIcon={<FiPlusCircle />}
             colorScheme="brand"
             variant="solid"
@@ -321,6 +535,7 @@ const Dashboard = () => {
             {!showNewTag ? "New Tag" : "Cancel new tag"}
           </Button>
         </Flex>
+        
         {showNewTag && (
           <Box
             bg="brand.300"
@@ -404,38 +619,13 @@ const Dashboard = () => {
               Create Task
             </Button>
           </Box>
-        )}
-
-        <Flex justify="center" marginTop={3} mb={4}>
-          <Button
-            onClick={() => handleFilterChange("completion")}
-            colorScheme={selectedFilter === "completion" ? "brand" : "gray"}
-            mr={2}
-            _hover={{ bg: "brand.50" }}
-          >
-            Sort by Completion
-          </Button>
-          <Button
-            onClick={() => handleFilterChange("tag")}
-            colorScheme={selectedFilter === "tag" ? "brand" : "gray"}
-            mr={2}
-            _hover={{ bg: "brand.50" }}
-          >
-            Sort by Tag
-          </Button>
-          <Button
-            onClick={() => handleFilterChange("assignedUser")}
-            colorScheme={selectedFilter === "assignedUser" ? "brand" : "gray"}
-            _hover={{ bg: "brand.50" }}
-          >
-            Sort by Assigned User
-          </Button>
-        </Flex>
-        <Flex wrap="wrap" justify="center" maxW="800px">
+        )}  </div>}
+          {!showGraphs&& 
+                  <Flex wrap="wrap" justify="center" maxW="800px">
           {tasks.map((task) => (
             <Box
               key={task._id}
-              bg="white"
+              bg="brand.500"
               p={4}
               m={2}
               borderRadius="md"
@@ -443,8 +633,8 @@ const Dashboard = () => {
               width="600px"
               textAlign="center"
             >
-              <Box mb={4} bg="brand.500" p={2} borderRadius="md">
-                <Heading size="md">{task.title}</Heading>
+              <Box mb={4} bg="brand.50" p={2} borderRadius="md">
+                <Heading textColor = "brand.800" size="md">{task.title}</Heading>
               </Box>
               <Text mb={6}>{task.description}</Text>
               <Flex alignItems="center">
@@ -466,7 +656,7 @@ const Dashboard = () => {
                 </Checkbox>
               </Flex>
               {task.assignedTags.length > 0 && (
-                <Text mb={2} fontSize="sm" color="gray.500">
+                <Text mb={2} fontSize="md" color="white">
                   Tags:{" "}
                   <Wrap>
                     {task.assignedTags.map((tag) => (
@@ -480,7 +670,7 @@ const Dashboard = () => {
                 </Text>
               )}
               {task.assignedUsers.length > 0 && (
-                <Text mb={2} fontSize="sm" color="gray.500">
+                <Text mb={2} fontSize="md" color="white">
                   Assigned Users:{" "}
                   <Wrap>
                     {task.assignedUsers.map((user) => (
@@ -546,7 +736,7 @@ const Dashboard = () => {
               </HStack>
             </Box>
           ))}
-        </Flex>
+        </Flex>}
       </Flex>
     );
   } else {
