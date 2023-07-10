@@ -9,15 +9,11 @@ import {
   GridItem,
   Text,
   Button,
-  Center,
   Flex,
-  Icon,
   HStack,
-  SimpleGrid,
   VisuallyHidden,
   Input,
   VStack,
-  ChakraBaseProvider,
   Switch,
 } from "@chakra-ui/react";
 

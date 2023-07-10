@@ -1,5 +1,4 @@
 import React, { useEffect, useState,useRef } from "react";
-import * as d3 from "d3";
 import { useNavigate } from "react-router-dom";
 import jwtDecode from "jwt-decode";
 import {
@@ -23,215 +22,8 @@ import {
   WrapItem,
 } from "@chakra-ui/react";
 import api from "./components/api";
+import {toaster, BarChart, DonutChart} from "./components/helpers"
 import { FiPlusCircle } from "react-icons/fi";
-
-const BarChart = ({ data }) => {
-  const chartRef = useRef(null);
-
-  useEffect(() => {
-    const container = d3.select(chartRef.current);
-
-    // Clear existing content
-    container.selectAll("*").remove();
-
-    // Count the number of tasks for each tag
-    const tagCounts = {};
-    data.forEach((task) => {
-      task.assignedTags.forEach((tag) => {
-        tagCounts[tag.name] = (tagCounts[tag.name] || 0) + 1;
-      });
-    });
-
-    // Convert tagCounts to an array of objects
-    const tagData = Object.entries(tagCounts).map(([label, value]) => ({
-      label,
-      value,
-    }));
-
-    // Define color scale for tags
-    const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
-
-    // Calculate the bar height based on the tag values
-    const barHeightScale = d3
-      .scaleLinear()
-      .domain([0, d3.max(tagData, (d) => d.value)])
-      .range([0, 200]);
-
-    // Create the bars
-    container
-      .selectAll("rect")
-      .data(tagData)
-      .enter()
-      .append("rect")
-      .attr("x", (d, i) => i * 40 + 20)
-      .attr("y", (d) => 200 - barHeightScale(d.value))
-      .attr("width", 30)
-      .attr("height", (d) => barHeightScale(d.value))
-      .attr("fill", (d, i) => colorScale(i))
-      .on("mouseover", function (event, d) {
-        d3.select(this).attr("fill", d3.color(colorScale(d.label)).darker(0.2));
-        container
-          .append("text")
-          .attr("x", event.pageX)
-          .attr("y", event.pageY - 10)
-          .attr("fill", "white")
-          .attr("font-size", "14px")
-          .attr("id", "tooltip")
-          .text(`${d.label}: ${d.value}`);
-      })
-      .on("mouseout", function () {
-        d3.select(this).attr("fill", (d, i) => colorScale(i));
-        container.select("#tooltip").remove();
-      });
-
-    // Create the x-axis
-    const xAxis = d3
-      .axisBottom()
-      .scale(
-        d3
-          .scaleBand()
-          .domain(tagData.map((d) => d.label))
-          .range([30, tagData.length * 40 + 10])
-      );
-
-    // Append a new SVG group for the x-axis
-    const xAxisGroup = container
-      .append("g")
-      .attr("transform", "translate(0, 200)")
-      .call(xAxis);
-
-    // Style the x-axis labels
-    xAxisGroup
-  .selectAll("text")
-  .attr("font-family", "Arial, sans-serif")
-  .attr("font-size", "20px")
-  .attr("fill", "#333")
-  .attr("transform", "rotate(-45)")
-  .style("text-anchor", "end")
-  .attr("dy", "-0.5em")
-  .attr("dx", "-0.5em")
-  .attr("fill", "orange");
-
-    // Add axis label
-    container
-      .append("text")
-      .attr("x", -50)
-      .attr("y", 220)
-      .attr("font-family", "Arial, sans-serif")
-      .attr("font-size", "16px")
-      .attr("fill", "#333")
-      .text("Tags");
-
-    // Add title
-    container
-      .append("text")
-      .attr("x", 200)
-      .attr("y", -20)
-      .attr("font-family", "Arial, sans-serif")
-      .attr("font-size", "20px")
-      .attr("font-weight", "bold")
-      .attr("fill", "#333")
-      .attr("text-anchor", "middle")
-      .text("Tag Frequency");
-
-    // Add chart border
-    container
-      .append("rect")
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("width", 400)
-      .attr("height", 250)
-      .attr("fill", "none")
-      .attr("stroke", "#ddd")
-      .attr("stroke-width", 1);
-  }, [data]);
-
-  return (
-    <Box width="400px" height="400px" p={4}>
-      <svg ref={chartRef} width="100%" height="100%" />
-    </Box>
-  );
-};
-
-
-const DonutChart = ({ data }) => {
-  const chartRef = useRef(null);
-
-  useEffect(() => {
-    const container = d3.select(chartRef.current);
-
-    // Clear existing content
-    container.selectAll("*").remove();
-
-    // Count the number of completed and pending tasks
-    const completedCount = data.filter((task) => task.status === "Completed").length;
-    const pendingCount = data.filter((task) => task.status === "Pending").length;
-
-    // Create the donut chart data
-    const donutData = [
-      { label: "Completed", value: completedCount },
-      { label: "Pending", value: pendingCount },
-    ];
-
-    // Set up the donut chart layout
-    const pie = d3.pie().value((d) => d.value);
-
-    // Generate the arc for each donut slice
-    const arc = d3.arc().innerRadius(70).outerRadius(100).cornerRadius(10);
-
-    // Create the donut slices
-    const slices = container
-      .selectAll("path")
-      .data(pie(donutData))
-      .enter()
-      .append("path")
-      .attr("d", arc)
-      .attr("fill", (d, i) => (i === 0 ? "#68D391" : "#ED8936"))
-      .attr("transform", "translate(200, 200)");
-
-    // Add percentages to the donut slices
-    slices
-      .append("text")
-      .attr("transform", (d) => `translate(${arc.centroid(d)})`)
-      .attr("text-anchor", "middle")
-      .attr("fill", "white")
-      .attr("font-family", "sans-serif")
-      .attr("font-size", "14px")
-      .text((d) => `${d.data.value} (${d3.format(".1%")(d.data.value / (completedCount + pendingCount))})`);
-
-    // Create legend
-    const legend = container
-      .selectAll(".legend")
-      .data(donutData)
-      .enter()
-      .append("g")
-      .attr("class", "legend")
-      .attr("transform", (d, i) => `translate(280, ${i * 30 + 20})`);
-
-    // Add legend color rectangles
-    legend
-      .append("rect")
-      .attr("width", 20)
-      .attr("height", 20)
-      .attr("fill", (d, i) => (i === 0 ? "#68D391" : "#ED8936"));
-
-    // Add legend text
-    legend
-      .append("text")
-      .attr("x", 30)
-      .attr("y", 15)
-      .attr("fill", "black")
-      .attr("font-family", "sans-serif")
-      .attr("font-size", "14px")
-      .text((d) => d.label);
-  }, [data]);
-
-  return (
-    <Box width="400px" height="800px" p={4}>
-      <svg ref={chartRef} width="100%" height="100%" />
-    </Box>
-  );
-};
 
 
 
@@ -256,23 +48,15 @@ const Dashboard = () => {
   const [newTag, setNewTag] = useState({
     name: "",
   });
-  const toaster = (message,flag) => {
-    toast({
-      title: message,
-      status: (flag)?("success"):("error"),
-      duration: 2000,
-      isClosable: true,
-    });
-  }
- 
+  
   const handleDeleteTask = async (taskId) => {
     try {
       await api.delete(`/tasks/${taskId}`);
       setTasks(tasks.filter((task) => task._id !== taskId));
-      toaster("Task has been sucessfully deleted",1);
+      toaster("Task has been sucessfully deleted",1,toast);
     } catch (error) {
       console.log(error);
-      toaster("An error occured while deleting the task",0);
+      toaster("An error occured while deleting the task",0,toast);
     }
   };
   
@@ -287,6 +71,7 @@ const Dashboard = () => {
 
   const handleCreateTask = async () => {
     try {
+      newTask.assignedUsers=[userDeets._id];
       const response = await api.put("/tasks/", newTask);
       setTasks([...tasks, response.data]);
       setShowNewTask(false);
@@ -313,11 +98,7 @@ const Dashboard = () => {
       console.log(error);
     }
   };
-
-  //helper function to clean up date display    
   
-
-
   const fetchTags = async () => {
     try {
       const response = await api.get("/tags/allTags");
@@ -380,19 +161,19 @@ const Dashboard = () => {
   const handleAddUser = async (userId,taskId) => {
     try{
         await api.put("/tasks/addUser",{"userId":userId,"taskId":taskId});
-        toaster("User added to task",1)
+        toaster("User added to task",1,toast)
       fetchTasks();
     }
-    catch {toaster(" There was an issue adding the user",0)}
+    catch {toaster(" There was an issue adding the user",0,toast)}
   };
 
   const handleAddTag = async (tagId,taskId) => {
     try{
         await api.put("/tasks/addTag",{"tagId":tagId,"taskId":taskId});
-        toaster("Tag added to task",1)
+        toaster("Tag added to task",1,toast)
       fetchTasks();
     }
-    catch{toaster(" There was an issue adding the tag",0)}
+    catch{toaster(" There was an issue adding the tag",0,toast)}
   };
 
   const handleCreateTag = async (taskId) => {
@@ -400,15 +181,9 @@ const Dashboard = () => {
       await api.put("/tags/", newTag);
       setShowNewTag(false);
       setNewTag({ name: "" });
-     toaster("Tag has been sucessfully created",1)
-    } catch (error) {toaster( "An error occurred while creating the tag.",0)}
+     toaster("Tag has been sucessfully created",1,toast)
+    } catch (error) {toaster( "An error occurred while creating the tag.",0,toast)}
   };
-
-
-
-
-
-
 
   if (userDeets && userDeets.isAdmin) {
     return (
