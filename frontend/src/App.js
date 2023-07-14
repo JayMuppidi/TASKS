@@ -6,7 +6,6 @@ import Dashboard from './Dashboard'
 import { extendTheme,ChakraProvider } from '@chakra-ui/react';
 import {BrowserRouter, Route, Routes} from 'react-router-dom';
 
-
 const colors = {
   brand: {
     50: "#f0e5f5",
@@ -31,8 +30,6 @@ const theme = extendTheme({ colors, config });
 function App() {
     return (
         <BrowserRouter>
-
- 
         <ChakraProvider theme = {theme}>
         <Navbar />
         <Routes>

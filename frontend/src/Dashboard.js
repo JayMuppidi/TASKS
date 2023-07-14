@@ -1,11 +1,9 @@
-import React, { useEffect, useState,useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import jwtDecode from "jwt-decode";
 import {
   Box,
   Button,
-  HStack,
-  Checkbox,
   Flex,
   FormControl,
   FormLabel,
@@ -14,18 +12,12 @@ import {
   Heading,
   Text,
   useToast,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  Wrap,
-  WrapItem,
+  Select
 } from "@chakra-ui/react";
 import api from "./components/api";
-import {toaster, BarChart, DonutChart} from "./components/helpers"
+import {toaster,fetchTags,fetchAllTasks, renderAdminTasks} from "./components/helpers"
+import {BarChart,DonutChart} from "./components/d3graphs"
 import { FiPlusCircle } from "react-icons/fi";
-
-
 
 const Dashboard = () => {
   const [tasks, setTasks] = useState([]);
@@ -37,6 +29,9 @@ const Dashboard = () => {
   const [showNewTask, setShowNewTask] = useState(false);
   const [showNewTag, setShowNewTag] = useState(false);
   const [showGraphs, setShowGraphs] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [selectedTag, setSelectedTag] = useState("");
+  const [selectedUser, setSelectedUser] = useState("");
   const [newTask, setNewTask] = useState({
     title: "",
     description: "",
@@ -49,17 +44,6 @@ const Dashboard = () => {
     name: "",
   });
   
-  const handleDeleteTask = async (taskId) => {
-    try {
-      await api.delete(`/tasks/${taskId}`);
-      setTasks(tasks.filter((task) => task._id !== taskId));
-      toaster("Task has been sucessfully deleted",1,toast);
-    } catch (error) {
-      console.log(error);
-      toaster("An error occured while deleting the task",0,toast);
-    }
-  };
-  
   const handleInputChange = (e) => {
     setNewTask({ ...newTask, [e.target.name]: e.target.value });
   };
@@ -67,7 +51,6 @@ const Dashboard = () => {
   const handleInputChangeTag = (e) => {
     setNewTag({ ...newTag, [e.target.name]: e.target.value });
   };
-  
 
   const handleCreateTask = async () => {
     try {
@@ -87,27 +70,7 @@ const Dashboard = () => {
       console.log(error);
     }
   };
-
-  const handleCompleteTask = async (taskId, checked) => {
-    try {
-      await api.put(`/tasks/updateStatus/${taskId}`, {
-        status: checked ? "Completed" : "Pending",
-      });
-      fetchTasks();
-    } catch (error) {
-      console.log(error);
-    }
-  };
   
-  const fetchTags = async () => {
-    try {
-      const response = await api.get("/tags/allTags");
-      setTags(response.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   async function fetchUserDetails(userTok) {
     try {
       const response = await api.get(`user/${userTok.user.id}`);
@@ -120,13 +83,28 @@ const Dashboard = () => {
   const fetchUsers = async () => {
     try {
       const response = await api.get("/user/allUsers");
-      console.log(response.data)
       setUsers(response.data);
     } catch (error) {
       console.log(error);
     }
   };
 
+  const handleFilterChange = (filterType, value) => {
+    switch (filterType) {
+      case "status":
+        setSelectedStatus(value);
+        break;
+      case "tag":
+        setSelectedTag(value);
+        break;
+      case "user":
+        setSelectedUser(value);
+        break;
+      default:
+        break;
+    }
+  };
+ 
   // Check if user is logged in
   useEffect(() => {
     const authTok = localStorage.getItem("authTok");
@@ -137,19 +115,11 @@ const Dashboard = () => {
     }
   }, [navigate]);
 
-  async function fetchTasks() {
-    try {
-      const response = await api.get("/tasks/allTasks");
-      setTasks(response.data);
-    } catch (error) {
-      console.log(error);
-    }
-  }
   // Fetch tasks and create charts for admin users
   useEffect(() => {
     if (userDeets && userDeets.isAdmin) {
-      fetchTags();
-      fetchTasks();
+      fetchTags(setTags);
+      fetchAllTasks(setTasks);
       fetchUsers();
     }
   }, [userDeets]);
@@ -157,24 +127,6 @@ const Dashboard = () => {
   //////??//////////////////////////////////////////
   // For adding a user or a tag, or creating a tag
 
-
-  const handleAddUser = async (userId,taskId) => {
-    try{
-        await api.put("/tasks/addUser",{"userId":userId,"taskId":taskId});
-        toaster("User added to task",1,toast)
-      fetchTasks();
-    }
-    catch {toaster(" There was an issue adding the user",0,toast)}
-  };
-
-  const handleAddTag = async (tagId,taskId) => {
-    try{
-        await api.put("/tasks/addTag",{"tagId":tagId,"taskId":taskId});
-        toaster("Tag added to task",1,toast)
-      fetchTasks();
-    }
-    catch{toaster(" There was an issue adding the tag",0,toast)}
-  };
 
   const handleCreateTag = async (taskId) => {
     try {
@@ -315,123 +267,51 @@ const Dashboard = () => {
             </Button>
           </Box>
         )}  </div>}
-          {!showGraphs&& 
-                  <Flex wrap="wrap" justify="center" maxW="800px">
-          {tasks.map((task) => (
-            <Box
-              key={task._id}
-              bg="brand.500"
-              p={4}
-              m={2}
-              borderRadius="md"
-              boxShadow="md"
-              width="600px"
-              textAlign="center"
-            >
-              <Box mb={4} bg="brand.50" p={2} borderRadius="md">
-                <Heading textColor = "brand.800" size="md">{task.title}</Heading>
-              </Box>
-              <Text mb={6}>{task.description}</Text>
-              <Flex alignItems="center">
-                <Checkbox
-                  isChecked={task.status === "Completed"}
-                  onChange={(e) =>
-                    handleCompleteTask(task._id, e.target.checked)
-                  }
-                >
-                  <Text
-                    ml={2}
-                    fontWeight="bold"
-                    color={
-                      task.status === "Completed" ? "green.500" : "gray.600"
-                    }
-                  >
-                    {task.status}
-                  </Text>
-                </Checkbox>
-              </Flex>
-              {task.assignedTags.length > 0 && (
-                <Text mb={2} fontSize="md" color="white">
-                  Tags:{" "}
-                  <Wrap>
-                    {task.assignedTags.map((tag) => (
-                      <WrapItem key={tag._id}>
-                        <Text bg="brand.200" px={2} py={1} borderRadius="md">
-                          {tag.name}
-                        </Text>
-                      </WrapItem>
-                    ))}
-                  </Wrap>
-                </Text>
-              )}
-              {task.assignedUsers.length > 0 && (
-                <Text mb={2} fontSize="md" color="white">
-                  Assigned Users:{" "}
-                  <Wrap>
-                    {task.assignedUsers.map((user) => (
-                      <WrapItem key={user._id}>
-                        <Text>{user.fName}</Text>
-                      </WrapItem>
-                    ))}
-                  </Wrap>
-                </Text>
-              )}
-              <Text mb={2}>Due by: {new Date(task.dueDate).toLocaleDateString("en-US")}</Text>
-              <HStack justify="space-between" mt="auto">
-              <Menu>
-              <MenuButton
-                as={Button}
-                flex={1}
-                size="sm"
-                colorScheme="brand"
-                variant="outline"
-              >
-                Add User
-              </MenuButton>
-              <MenuList>
-                {users.map((user) => (
-                  <MenuItem
-                    key={user._id}
-                    onClick={() => handleAddUser(user._id,task._id)}
-                  >
-                    {user.fName}
-                  </MenuItem>
-                ))}
-              </MenuList>
-            </Menu>
-            
-            <Menu>
-              <MenuButton
-                as={Button}
-                flex={1}
-                size="sm"
-                colorScheme="brand"
-                variant="outline"
-              >
-                Add Tag
-              </MenuButton>
-              <MenuList>
-                {tags.map((tag) => (
-                  <MenuItem
-                    key={tag._id}
-                    onClick={() => handleAddTag(tag._id,task._id)}
-                  >
-                    {tag.name}
-                  </MenuItem>
-                ))}
-              </MenuList>
-            </Menu>
-                <Button
-                  flex={1}
-                  size="sm"
-                  onClick={() => handleDeleteTask(task._id)}
-                >
-                  Delete
-                </Button>
-              </HStack>
-            </Box>
-          ))}
-        </Flex>}
+
+        {!showGraphs&&<Flex wrap="wrap" justify="center" maxW="800px">
+        <FormControl mx={2}>
+          <FormLabel>Status</FormLabel>
+          <Select
+            value={selectedStatus}
+            onChange={(e) => handleFilterChange("status", e.target.value)}
+          >
+            <option value="All">All</option>
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
+          </Select>
+        </FormControl>
+
+        <FormControl mx={2}>
+          <FormLabel>Tag</FormLabel>
+          <Select
+            value={selectedTag}
+            onChange={(e) => handleFilterChange("tag", e.target.value)}
+          >
+            <option value="">All</option>
+            {tags.map((tag) => (
+              <option key={tag._id} value={tag._id}>
+                {tag.name}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
+
+        <FormControl mx={2}>
+          <FormLabel>User</FormLabel>
+          <Select
+            value={selectedUser}
+            onChange={(e) => handleFilterChange("user", e.target.value)}
+          >
+            <option value="">All</option>
+            {users.map((user) => (
+              <option key={user._id} value={user._id}>
+                {user.fName}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
+      </Flex>}
+          {!showGraphs&& renderAdminTasks(tasks,users,tags,toast,setTasks,selectedStatus,selectedTag,selectedUser)}
       </Flex>
     );
   } else {

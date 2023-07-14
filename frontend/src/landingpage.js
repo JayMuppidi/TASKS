@@ -1,7 +1,6 @@
 import React, { useState,useEffect } from "react";
 import {Navigate} from "react-router-dom";
 import { useNavigate } from "react-router-dom";
-import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 import api from './components/api';
 import {
   chakra,
@@ -17,70 +16,16 @@ import {
   Switch,
 } from "@chakra-ui/react";
 
-export default function App() {
+export default function Landing() {
   const [isSignUp, setIsSignUp] = useState(true);
-  const [errorMessages, setErrorMessages]= useState({});
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSubmitted,setIsSubmitted]= useState(false);
-  //const [errorMessages, setErrorMessages]= useState({});
   const [signupFirstName, setSignupFirstName] = useState("");
   const [signupLastName, setSignupLastName] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [signinEmail, setSigninEmail] = useState("");
-  const [signinPassword, setSigninPassword] = useState("");
-
-  
-  const renderErrorMessage = (name) =>
-  name === errorMessages.name && (
-    <div className="error">{errorMessages.message}</div>
-  );
-
-const errors = {
-  pError: "invalid password",
-  unkownE: "Sorry try again unkown error",
-  assocE: "This email is not associated to any account",
-};
-  const handleToggleSignUp = () => {
-    setIsSignUp(!isSignUp);
-  };
-
-  const handleToggleAdmin = () => {
-    setIsAdmin(!isAdmin);
-  };
-  const handleGoogleSuccess = async (response) => {
-    //const { tokenId } = response;
-    const tokenId = response.credential;
-    //console.log(response)
-    const tokenDeets = {
-      "tokenId": tokenId
-    }
-    try {
-      const reply = await api.post("/api/gAuth/", tokenDeets);
-      if (reply.status === 200) {
-        setIsSubmitted(true);
-        localStorage.setItem("authTok", reply.data.token);
-        localStorage.setItem("user", 'true');
-      } 
-      // Save the token to the local storage or context state
-    } catch (error) {
-       if (error.response.status === 400) {
-        setErrorMessages({ name: "gError", message: errors.assocE });
-      } 
-      else {
-        setErrorMessages({name: "gError", message: errors.unkownE});
-      }
-      
-    }
-   
-  };
-  
-  const handleGoogleFailure = (response) => {
-    //console.log(response);
-    setErrorMessages({name: "gError", message: errors.unkownE});
-  };
-      
-      
+  const [signinPassword, setSigninPassword] = useState("");      
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -123,7 +68,6 @@ const errors = {
       "email": signinEmail,
       "pword": signinPassword,
     };
-
     try {
       const response = await api.post("/auth/login", signinValues);
       const { token, error } = response.data;
@@ -203,10 +147,8 @@ const errors = {
                 my={2}
                 type="text"
                 placeholder="First Name"
-                bg="white"
                 _placeholder={{ color: "brand.500" }}
                 name="firstName"
-                textColor="brand.500"
                 value={signupFirstName}
                 onChange={handleInputChange}
               />
@@ -216,8 +158,6 @@ const errors = {
                 my={2}
                 type="text"
                 placeholder="Last Name"
-                bg="white"
-                textColor="brand.500"
                 _placeholder={{ color: "brand.500" }}
                 name="lastName"
                 value={signupLastName}
@@ -229,8 +169,6 @@ const errors = {
                 my={2}
                 type="email"
                 placeholder="Email Address"
-                bg="white"
-                textColor="brand.500"
                 _placeholder={{ color: "brand.500" }}
                 name="email"
                 value={signupEmail}
@@ -242,20 +180,17 @@ const errors = {
                 my={2}
                 type="password"
                 placeholder="Password"
-                bg="white"
-                textColor="brand.500"
                 _placeholder={{ color: "brand.500" }}
                 name="password"
                 value={signupPassword}
                 onChange={handleInputChange}
               />
-              {renderErrorMessage("pError")}
+              
 <HStack>
   <Text fontWeight={!isAdmin ? "bold" : "normal"}>Normal User</Text>
   <Switch
-    colorScheme="brand"
     isChecked={isAdmin}
-    onChange={handleToggleAdmin}
+    onChange={()=>setIsAdmin(!isAdmin)}
     size="lg"
     mt={2}
     mb={4}
@@ -271,7 +206,6 @@ const errors = {
                 my={2}
                 type="email"
                 placeholder="Email Address"
-                bg="white"
                 textColor="brand.500"
                 _placeholder={{ color: "brand.500" }}
                 name="email"
@@ -284,7 +218,6 @@ const errors = {
                 my={2}
                 type="password"
                 placeholder="Password"
-                textColor="brand.500"
                 _placeholder={{ color: "brand.500" }}
                 name="password"
                 value={signinPassword}
@@ -304,28 +237,12 @@ const errors = {
           >
             {isSignUp ? "Sign up for free" : "Sign in"}
           </Button>
-          {/* <GoogleOAuthProvider  clientId="136594722692-lp6ui1591t2uf6f4vrmjbmtk1bfvbn8s.apps.googleusercontent.com">
-
-                
-                <GoogleLogin
-     
-      key = "AIzaSyB4mexqgCsb-WLHuJbfkHBu-VHxkIT9J6Y"
-      buttonText="Login with Google"
-      borderRadius='8px'
-      margin = '10px'
-      onSuccess={handleGoogleSuccess}
-      onFailure={handleGoogleFailure}
-      cookiePolicy={'single_host_origin'}
-    />
-        {renderErrorMessage("gError")}
-        </GoogleOAuthProvider> */}
-
           <Button
               my = {2}
               variant="link"
               color = "brand.50"
               colorScheme="brand"
-              onClick={handleToggleSignUp}
+              onClick={()=>setIsSignUp(!isSignUp)}
             >
               {isSignUp ? "Sign in instead" : "Create an account"}
             </Button>

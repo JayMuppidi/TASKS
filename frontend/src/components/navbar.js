@@ -13,7 +13,6 @@ import {
   VStack,
   IconButton,
   CloseButton,
-  Avatar,
   SimpleGrid,
 } from "@chakra-ui/react";
 import { FiLogOut } from "react-icons/fi";
@@ -34,19 +33,20 @@ export default function Navbar() {
       setUserTok(jwtDecode(authTok));
     } 
   }, [navigate]);
-
   // Fetch user details
+
+  async function fetchUserDetails() {
+    try {
+      const response = await api.get(`user/${userTok.user.id}`);
+      setUserDeets(response.data.user);
+    } catch (error) {
+      console.log(error);
+      navigate("/");
+    }
+  }
+
   useEffect(() => {
     if (userTok) {
-      async function fetchUserDetails() {
-        try {
-          const response = await api.get(`user/${userTok.user.id}`);
-          setUserDeets(response.data.user);
-        } catch (error) {
-          console.log(error);
-          navigate("/");
-        }
-      }
       fetchUserDetails();
     }
   }, [userTok]);
@@ -54,6 +54,7 @@ export default function Navbar() {
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('authTok');
+    setUserDeets(null);
     navigate('/')
     
   };
@@ -67,7 +68,7 @@ export default function Navbar() {
         shadow="md"
       >
         <Flex alignItems="center" justifyContent="space-between" mx="auto">
-          <HStack display="flex" spacing={3} alignItems="center">
+          {userDeets&&<HStack display="flex" spacing={3} alignItems="center">
             <Box display={{ base: "inline-flex", md: "none" }}>
               <IconButton
                 display={{ base: "flex", md: "none" }}
@@ -95,6 +96,7 @@ export default function Navbar() {
                 shadow="sm"
               >
                 <CloseButton
+                key="close-button"
                   aria-label="Close menu"
                   justifySelf="self-start"
                   onClick={mobileNav.onClose}
@@ -111,8 +113,7 @@ export default function Navbar() {
             <Button variant="ghost"   leftIcon={<AiFillHome />}  onClick={() => navigate("/profile")} size="sm">
                 Profile
               </Button>
-
-          </HStack>
+          </HStack>}
 
           <SimpleGrid flex="1" minChildWidth="120px" spacing="20px" justifyItems="center">
             <Box
@@ -165,13 +166,6 @@ export default function Navbar() {
       Logout
     </IconButton>
 )}
-            
-
-            <Avatar
-              size="sm"
-              name="Dan Abrahmov"
-              src="https://bit.ly/dan-abramov"
-            />
           </HStack>
         </Flex>
       </chakra.header>

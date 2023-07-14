@@ -3,33 +3,24 @@ import { useNavigate } from "react-router-dom";
 import jwtDecode from "jwt-decode";
 import api from "./components/api";
 import {
-  chakra,
   Box,
-  GridItem,
   Button,
-  Center,
-  Image,
   HStack,
   Flex,
-  Icon,
-  SimpleGrid,
-  VisuallyHidden,
-  Input,
-  VStack,
-  ChakraBaseProvider,
-  Switch,
-  Text,
-  Badge,
-  IconButton,
-  useToast,
-  Checkbox,
-  Stack,
-  Select,
-  FormLabel,
   FormControl,
+  FormLabel,
+  chakra,
+  Input,
+  Text,
+  useToast,
+  VStack,
+  GridItem,
+  Image,
+  SimpleGrid,
 } from "@chakra-ui/react";
-import { FiTrash2, FiFilter ,FiPlusCircle } from "react-icons/fi";
+import {FiPlusCircle } from "react-icons/fi";
 import {FaEnvelope} from "react-icons/fa"
+import {renderTasks,fetchTags,fetchTasks} from "./components/helpers"
 import { BsFillShieldFill } from 'react-icons/bs';
 
 const Profile = () => {
@@ -37,6 +28,7 @@ const Profile = () => {
   const [userDeets, setUserDeets] = useState(null);
   const [tasks, setTasks] = useState([]);
   const toast = useToast();
+  const [tags, setTags] = useState([]);
   const [showNewTask, setShowNewTask] = useState(false);
   const [newTask, setNewTask] = useState({
     title: "",
@@ -69,75 +61,27 @@ const Profile = () => {
         }
       }
       fetchData();
+      fetchTasks(userDeets,setTasks);
+      fetchTags(setTags);
     }
   }, [userTok]);
 
-  useEffect(() => {
-    async function fetchTasks() {
-      try {
-        const deets = {
-          "taskIds":userDeets.Tasks,
-         }
-        const reply = await api.post("/tasks/multiple",deets);
-        setTasks(reply.data);
-      } catch (error) {
-        console.log(error);
-      }
-    }
-    fetchTasks();
+
+  useEffect(() => { 
+    fetchTasks(userDeets,setTasks);
+    fetchTags(setTags);
   }, [userDeets]);
-
-  const handleDeleteTask = async (taskId) => {
-    try {
-      await api.delete(`/tasks/${taskId}`);
-      setTasks(tasks.filter((task) => task._id !== taskId));
-      
-      // Show a success toast notification
-      toast({
-        title: "Task Deleted",
-        description: "Task has been successfully deleted.",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-    } catch (error) {
-      console.log(error);
-      
-      // Show an error toast notification
-      toast({
-        title: "Error",
-        description: "An error occurred while deleting the task.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  };
-
-  const handleCompleteTask = async (taskId, checked) => {
-    try {
-      await api.put(`/tasks/updateStatus/${taskId}`, {
-        status: checked ? "Completed" : "Pending",
-      });
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-
-  const handleShowNewTask = () => {
-    setShowNewTask(!showNewTask);
-  };
-
-
+ 
   const handleInputChange = (e) => {
     setNewTask({ ...newTask, [e.target.name]: e.target.value });
   };
+ 
 
   const handleCreateTask = async () => {
     try {
-      newTask.assignedUsers=[userDeets._id];
+      newTask.assignedUsers = [userDeets._id];
       const response = await api.put("/tasks/", newTask);
+      await fetchTasks(); // Wait for tasks to be fetched
       setTasks([...tasks, response.data]);
       setShowNewTask(false);
       setNewTask({
@@ -145,18 +89,16 @@ const Profile = () => {
         description: "",
         dueDate: "",
         status: "Pending",
-        "assignedUsers": [userDeets._id],
+        assignedUsers: [userDeets._id],
         assignedTags: [],
       });
     } catch (error) {
       console.log(error);
     }
   };
-
   return (
     <Box px={8} py={24} mx="auto" minHeight="100vh" bg="brand.50">
       <VStack spacing={8} alignItems="center">
-        {/* User Details */}
         <GridItem
   colSpan={{ base: "auto", lg: 7 }}
   textAlign={{ base: "center", lg: "left" }}
@@ -191,7 +133,6 @@ const Profile = () => {
     borderRadius="90%"
     boxSize="200px"
     shadow="lg"
-   
     mb={-20}
     borderColor="brand.800"
   />
@@ -243,7 +184,6 @@ const Profile = () => {
           >
             Tasks
           </chakra.h1>
-
           {/* New Task */}
           <Flex justifyContent="flex-end" mb={4}>
             <Button
@@ -251,7 +191,7 @@ const Profile = () => {
               colorScheme="brand"
               variant="solid"
               size="md"
-              onClick={handleShowNewTask}
+              onClick={() => setShowNewTask(!showNewTask)}
             >
               {!showNewTask ?("New Task"): ("Cancel new task")}
             </Button>
@@ -311,50 +251,7 @@ const Profile = () => {
 
           {/* Task Cards */}
           <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={8}>
-  {tasks.map((task) => (
-    <Box
-      key={task._id}
-      bg="brand.100" // Use a lighter background color
-      rounded="md" // Use a slightly larger border radius
-      shadow="md" // Use a smaller shadow size
-      p={6} // Increase the padding to make the cards bigger
-      borderWidth={1}
-      borderColor="gray.200"
-    >
-      <Flex justifyContent="space-between" mb={4}> 
-        <Text fontSize="2xl" fontWeight="bold"> 
-          {task.title}
-        </Text>
-        <IconButton
-          icon={<FiTrash2 />}
-          size="sm"
-          variant="outline"
-          onClick={() => handleDeleteTask(task._id)}
-        />
-      </Flex>
-      <Text mb={6}>{task.description}</Text>
-      <Flex alignItems="center">
-        <Checkbox
-          isChecked={task.status === "Completed"}
-          onChange={(e) =>
-            handleCompleteTask(task._id, e.target.checked)
-          }
-        >
-          <Text
-            ml={2}
-            fontWeight="bold"
-            color={
-              task.status === "Completed"
-                ? "green.500"
-                : "gray.600"
-            }
-          >
-            {task.status}
-          </Text>
-        </Checkbox>
-      </Flex>
-    </Box>
-  ))}
+          {tags && renderTasks(tasks, tags,toast,setTasks,userDeets)}
 </SimpleGrid>
         </GridItem>
       </VStack>
