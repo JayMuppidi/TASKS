@@ -44,6 +44,7 @@ const Dashboard = () => {
     name: "",
   });
   
+
   const handleInputChange = (e) => {
     setNewTask({ ...newTask, [e.target.name]: e.target.value });
   };
