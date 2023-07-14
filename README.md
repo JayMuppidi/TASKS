@@ -17,11 +17,7 @@ This is a web-based task management system developed using the MERN stack (Mongo
 
 
 ## Technologies Used
-
-- MongoDB: A NoSQL database used for storing task and user data.
-- Express: A web application framework for building the server-side API.
-- React: A JavaScript library for building the user interface.
-- Node.js: A JavaScript runtime environment used for server-side development.
-- D3.js: A JavaScript library for data visualization used in the admin dashboard.
+- MERN
+- D3.js: For data visualization used in the admin dashboard.
 - JWT (JSON Web Tokens): Used for user authentication and authorization.
-- Chakra UI: A flexible UI component library for styling the application.
+- Chakra UI(React UI Library): Used for styling the application.
