@@ -8,7 +8,6 @@ const router = express.Router();
 router.put('/', async (req, res) => {
     try {
       const { name } = req.body;
-      console.log(req.body)
       // Create a new task instance
       const newTag = new Tag({
         name

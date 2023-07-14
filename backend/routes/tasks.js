@@ -96,7 +96,6 @@ router.put('/updateStatus/:id', async (req, res) => {
 router.post('/multiple', async (req, res) => {
   const {taskIds} = req.body;
   try {
-    console.log(req.body);
     // Find tasks with the given IDs in the database
     const tasks = await Task.find({ _id: { $in: taskIds } })
       .populate('assignedTags', 'name') // Populate the assignedTags field with the tag name
@@ -124,7 +123,6 @@ router.get('/allTasks', async (req, res) => {
 router.put('/', async (req, res) => {
   try {
     const { title, description, dueDate, status, assignedUsers, assignedTags } = req.body;
-    console.log(assignedUsers)
     // Create a new task instance
     const newTask = new Task({
       title,
@@ -149,7 +147,6 @@ router.put('/', async (req, res) => {
       { _id: { $in: assignedTags } },
       { $push: { tasks: savedTask._id } }
     );
-    console.log(savedTask);
     res.status(201).json(savedTask);
   } catch (error) {
     console.error(error);
