@@ -1,5 +1,5 @@
 import React from 'react';
-import Landing from './Landingpage';
+import Landing from './Landingpage.js';
 import Navbar from './components/navbar';
 import Profile from './Profile.js';
 import Dashboard from './Dashboard'
