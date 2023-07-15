@@ -95,6 +95,12 @@ export default function Navbar() {
                 rounded="sm"
                 shadow="sm"
               >
+                <Button variant="ghost"   onClick={() => navigate("/dashboard")} size="sm">
+                Dashboard
+              </Button>
+            <Button variant="ghost"   leftIcon={<AiFillHome />}  onClick={() => navigate("/profile")} size="sm">
+                Profile
+              </Button>
                 <CloseButton
                 key="close-button"
                   aria-label="Close menu"
