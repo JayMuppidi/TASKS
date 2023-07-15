@@ -1,4 +1,3 @@
-
 import api from "./api";
 import {
   Box,
@@ -273,7 +272,7 @@ export function toaster (message,flag,toast) {
             {users.map((user) => (
               <MenuItem
                 key={user._id}
-                onClick={() => handleAddUser(user._id, task._id)}
+                onClick={() => handleAddUser(user._id, task._id,toast)}
               >
                 {user.fName}
               </MenuItem>

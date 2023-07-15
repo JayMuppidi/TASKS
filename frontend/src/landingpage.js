@@ -206,7 +206,6 @@ export default function Landing() {
                 my={2}
                 type="email"
                 placeholder="Email Address"
-                textColor="brand.500"
                 _placeholder={{ color: "brand.500" }}
                 name="email"
                 value={signinEmail}
