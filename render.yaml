@@ -3,6 +3,7 @@ services:
   - type: web
     name: tasks
     runtime: docker
+    plan: free
     repo: https://github.com/JayMuppidi/TASKS # optional
     region: oregon # optional (defaults to oregon)
     branch: main # optional (defaults to master)
